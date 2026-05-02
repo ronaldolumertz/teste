@@ -5,20 +5,22 @@ import { useAuth } from '../contexts/AuthContext'
 const BASE_URL = window.location.origin + window.location.pathname
 
 export default function InviteModal({ onClose }) {
-  const { company } = useAuth()
+  const { company }         = useAuth()
+  const [email, setEmail]   = useState('')
   const [role, setRole]     = useState('member')
   const [link, setLink]     = useState('')
   const [copied, setCopied] = useState(false)
   const [busy, setBusy]     = useState(false)
   const [error, setError]   = useState('')
 
-  const generate = async () => {
+  const handleInvite = async (e) => {
+    e.preventDefault()
     setError('')
     setBusy(true)
     try {
       const { data, error: err } = await supabase
         .from('invites')
-        .insert({ company_id: company.id, role })
+        .insert({ company_id: company.id, role, invited_email: email.trim().toLowerCase() })
         .select('token')
         .single()
       if (err) throw err
@@ -49,34 +51,51 @@ export default function InviteModal({ onClose }) {
         </div>
 
         <div className="modal-body">
-          <div className="field">
-            <label>Papel do convidado</label>
-            <select className="field-input" value={role} onChange={e => setRole(e.target.value)}>
-              <option value="admin">Administrador — gerencia colunas e membros</option>
-              <option value="member">Membro — edita cards nas colunas permitidas</option>
-              <option value="viewer">Visualizador — somente leitura</option>
-            </select>
-          </div>
-
           {!link ? (
-            <>
-              {error && <div className="auth-error">{error}</div>}
-              <button className="btn btn-primary" onClick={generate} disabled={busy}>
-                {busy ? 'Gerando…' : 'Gerar link de convite'}
-              </button>
-            </>
-          ) : (
-            <div className="field">
-              <label>Link de convite (válido para 1 uso)</label>
-              <div className="invite-link-box">
-                <span className="invite-link-text">{link}</span>
-                <button className="btn btn-primary" onClick={copy} style={{ flexShrink: 0 }}>
-                  {copied ? '✓ Copiado!' : 'Copiar'}
-                </button>
+            <form onSubmit={handleInvite} style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              <div className="field">
+                <label>E-mail do convidado</label>
+                <input className="field-input" type="email" value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="colaborador@email.com" required autoFocus />
+                <span style={{ fontSize:11, color:'var(--text-dim)', marginTop:3 }}>
+                  Somente este e-mail poderá usar o convite
+                </span>
               </div>
-              <p style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 6 }}>
-                Envie este link para o convidado. Ele expira após o primeiro uso.
-              </p>
+              <div className="field">
+                <label>Papel</label>
+                <select className="field-input" value={role} onChange={e => setRole(e.target.value)}>
+                  <option value="admin">Administrador — gerencia colunas e membros</option>
+                  <option value="member">Membro — edita cards nas colunas permitidas</option>
+                  <option value="viewer">Visualizador — somente leitura</option>
+                </select>
+              </div>
+              {error && <div className="auth-error">{error}</div>}
+              <button className="btn btn-primary" type="submit" disabled={busy}>
+                {busy ? 'Criando convite…' : 'Gerar convite'}
+              </button>
+            </form>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <div style={{
+                background:'rgba(34,197,94,.1)', border:'1px solid rgba(34,197,94,.3)',
+                borderRadius:'var(--radius)', padding:'10px 12px', fontSize:13, color:'var(--success)',
+              }}>
+                Convite criado para <strong>{email}</strong>. Somente este e-mail poderá usar o link.
+              </div>
+              <div className="field">
+                <label>Link de convite (1 uso)</label>
+                <div className="invite-link-box">
+                  <span className="invite-link-text">{link}</span>
+                  <button className="btn btn-primary" type="button" onClick={copy} style={{ flexShrink:0 }}>
+                    {copied ? '✓ Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+              <button className="btn btn-ghost" style={{ alignSelf:'flex-start' }}
+                onClick={() => { setLink(''); setEmail(''); }}>
+                Convidar outra pessoa
+              </button>
             </div>
           )}
         </div>

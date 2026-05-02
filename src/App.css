@@ -182,6 +182,12 @@ select.field-input { cursor:pointer; appearance:none; background-image:url("data
 .perm-opt:hover { border-color:var(--border-light); color:var(--text); }
 .perm-opt.selected { background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
 
+/* ── Campo de senha com botão olho ──────────────────────── */
+.pass-wrap { position:relative; }
+.pass-wrap .field-input { padding-right:40px; }
+.pass-eye { position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--text-dim); padding:4px; line-height:0; }
+.pass-eye:hover { color:var(--text-muted); }
+
 /* ── Responsivo Mobile ───────────────────────────────────── */
 @media (max-width: 640px) {
   /* Header */

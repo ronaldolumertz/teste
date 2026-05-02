@@ -5,16 +5,32 @@ import { useAuth } from '../contexts/AuthContext'
 
 const ROLE_LABELS = { admin: 'Administrador', member: 'Membro', viewer: 'Visualizador' }
 
-export default function Invite() {
-  const { token }         = useParams()
-  const navigate          = useNavigate()
-  const { user, refreshProfile } = useAuth()
+function EyeIcon({ visible }) {
+  return visible ? (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  ) : (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  )
+}
 
-  const [info, setInfo]   = useState(null)
-  const [step, setStep]   = useState('loading') // loading | info | form | done | error
-  const [form, setForm]   = useState({ name: '', password: '' })
-  const [error, setError] = useState('')
-  const [busy, setBusy]   = useState(false)
+export default function Invite() {
+  const { token }                   = useParams()
+  const navigate                    = useNavigate()
+  const { user, refreshProfile }    = useAuth()
+
+  const [info, setInfo]             = useState(null)
+  const [step, setStep]             = useState('loading')
+  const [form, setForm]             = useState({ name: '', email: '', password: '' })
+  const [showPass, setShowPass]     = useState(false)
+  const [error, setError]           = useState('')
+  const [busy, setBusy]             = useState(false)
 
   useEffect(() => {
     supabase.rpc('get_invite_info', { p_token: token }).then(({ data, error }) => {
@@ -22,31 +38,27 @@ export default function Invite() {
       const info = typeof data === 'string' ? JSON.parse(data) : data
       if (!info.valid) { setStep('error'); setError('Este convite já foi utilizado ou é inválido.'); return }
       setInfo(info)
-      setStep(user ? 'form' : 'form')
+      if (info.invited_email) setForm(f => ({ ...f, email: info.invited_email }))
+      setStep('form')
     })
   }, [token, user])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  const handleSubmit = async (e) => {
+  const acceptInvite = async (name) => {
+    const { error: rpcErr } = await supabase.rpc('accept_invite', { p_token: token, p_user_name: name })
+    if (rpcErr) throw rpcErr
+    await refreshProfile()
+    setStep('done')
+    setTimeout(() => navigate('/app'), 2000)
+  }
+
+  const handleLoggedIn = async (e) => {
     e.preventDefault()
     setError('')
     setBusy(true)
     try {
-      let uid = user?.id
-      if (!uid) {
-        // Need to sign up first — get email from invite is not available, so ask
-        setError('Faça login ou crie uma conta antes de aceitar o convite.')
-        setBusy(false)
-        return
-      }
-      const { error: rpcErr } = await supabase.rpc('accept_invite', {
-        p_token: token, p_user_name: form.name,
-      })
-      if (rpcErr) throw rpcErr
-      await refreshProfile()
-      setStep('done')
-      setTimeout(() => navigate('/app'), 2000)
+      await acceptInvite(form.name)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -59,20 +71,11 @@ export default function Invite() {
     setError('')
     setBusy(true)
     try {
-      const emailInput = e.target.email?.value || form.email
-      const { data, error: signErr } = await supabase.auth.signUp({
-        email: emailInput, password: form.password,
-      })
+      const emailToUse = info?.invited_email || form.email
+      const { data, error: signErr } = await supabase.auth.signUp({ email: emailToUse, password: form.password })
       if (signErr) throw signErr
       if (!data.user) throw new Error('Confirme seu e-mail e volte a este link.')
-
-      const { error: rpcErr } = await supabase.rpc('accept_invite', {
-        p_token: token, p_user_name: form.name,
-      })
-      if (rpcErr) throw rpcErr
-      await refreshProfile()
-      setStep('done')
-      setTimeout(() => navigate('/app'), 2000)
+      await acceptInvite(form.name)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -81,24 +84,24 @@ export default function Invite() {
   }
 
   if (step === 'loading') return (
-    <div className="auth-page"><div className="auth-box" style={{ textAlign: 'center' }}>
-      <div className="spinner" style={{ margin: '0 auto' }} />
-      <p style={{ color: 'var(--text-muted)', marginTop: 12 }}>Verificando convite…</p>
+    <div className="auth-page"><div className="auth-box" style={{ textAlign:'center' }}>
+      <div className="spinner" style={{ margin:'0 auto' }} />
+      <p style={{ color:'var(--text-muted)', marginTop:12 }}>Verificando convite…</p>
     </div></div>
   )
 
   if (step === 'error') return (
-    <div className="auth-page"><div className="auth-box" style={{ textAlign: 'center' }}>
-      <p style={{ color: 'var(--danger)', marginBottom: 16 }}>{error || 'Convite inválido.'}</p>
+    <div className="auth-page"><div className="auth-box" style={{ textAlign:'center' }}>
+      <p style={{ color:'var(--danger)', marginBottom:16 }}>{error || 'Convite inválido.'}</p>
       <Link to="/login" className="btn btn-ghost">Ir para o login</Link>
     </div></div>
   )
 
   if (step === 'done') return (
-    <div className="auth-page"><div className="auth-box" style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
-      <h2 style={{ marginBottom: 8, color: 'var(--success)' }}>Bem-vindo(a)!</h2>
-      <p style={{ color: 'var(--text-muted)' }}>Redirecionando…</p>
+    <div className="auth-page"><div className="auth-box" style={{ textAlign:'center' }}>
+      <div style={{ fontSize:40, marginBottom:12 }}>✓</div>
+      <h2 style={{ marginBottom:8, color:'var(--success)' }}>Bem-vindo(a)!</h2>
+      <p style={{ color:'var(--text-muted)' }}>Redirecionando…</p>
     </div></div>
   )
 
@@ -120,10 +123,14 @@ export default function Invite() {
             <span className="role-badge">{ROLE_LABELS[info.role] || info.role}</span>
           </div>
         )}
+        {info?.invited_email && (
+          <p style={{ fontSize:12, color:'var(--text-dim)', marginBottom:16, textAlign:'center' }}>
+            Este convite é exclusivo para <strong style={{ color:'var(--text-muted)' }}>{info.invited_email}</strong>
+          </p>
+        )}
 
         {user ? (
-          // Already logged in — just accept
-          <form onSubmit={handleSubmit} className="auth-form">
+          <form onSubmit={handleLoggedIn} className="auth-form">
             <div className="field">
               <label>Seu Nome</label>
               <input className="field-input" value={form.name}
@@ -136,25 +143,31 @@ export default function Invite() {
             </button>
           </form>
         ) : (
-          // New user — sign up and accept
           <form onSubmit={handleNewUser} className="auth-form">
             <div className="field">
               <label>Seu Nome</label>
-              <input className="field-input" name="name" value={form.name}
+              <input className="field-input" value={form.name}
                 onChange={e => set('name', e.target.value)}
                 placeholder="Nome completo" required autoFocus />
             </div>
             <div className="field">
               <label>E-mail</label>
-              <input className="field-input" name="email" type="email" value={form.email || ''}
-                onChange={e => set('email', e.target.value)}
+              <input className="field-input" type="email" value={form.email}
+                onChange={e => !info?.invited_email && set('email', e.target.value)}
+                readOnly={!!info?.invited_email}
+                style={info?.invited_email ? { opacity:.7, cursor:'default' } : {}}
                 placeholder="seu@email.com" required />
             </div>
             <div className="field">
               <label>Senha</label>
-              <input className="field-input" type="password" value={form.password}
-                onChange={e => set('password', e.target.value)}
-                placeholder="Mínimo 6 caracteres" minLength={6} required />
+              <div className="pass-wrap">
+                <input className="field-input" type={showPass ? 'text' : 'password'} value={form.password}
+                  onChange={e => set('password', e.target.value)}
+                  placeholder="Mínimo 6 caracteres" minLength={6} required />
+                <button type="button" className="pass-eye" onClick={() => setShowPass(v => !v)} tabIndex={-1}>
+                  <EyeIcon visible={showPass} />
+                </button>
+              </div>
             </div>
             {error && <div className="auth-error">{error}</div>}
             <button className="btn btn-primary btn-full" type="submit" disabled={busy}>

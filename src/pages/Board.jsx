@@ -23,14 +23,16 @@ export default function Board() {
   const [editingCol, setEditingCol]   = useState(null)
   const [draggingCardId, setDraggingCardId] = useState(null)
   const [loading, setLoading]         = useState(true)
+  const [boardError, setBoardError]   = useState('')
 
   // ── Fetch ──────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
-    const [{ data: cols }, { data: cds }, { data: perms }] = await Promise.all([
+    const [{ data: cols, error: colErr }, { data: cds }, { data: perms }] = await Promise.all([
       supabase.from('columns').select('*').eq('company_id', company.id).order('position'),
       supabase.from('cards').select('*').eq('company_id', company.id).order('created_at'),
       supabase.from('column_permissions').select('*').eq('profile_id', profile.id),
     ])
+    if (colErr) setBoardError(colErr.message)
     setColumns(cols || [])
     setCards(cds || [])
     setMyPerms(perms || [])
@@ -105,9 +107,10 @@ export default function Board() {
   const handleAddColumn = async () => {
     const pos = columns.length
     const color = COLORS[pos % COLORS.length]
-    const { data } = await supabase.from('columns')
+    const { data, error } = await supabase.from('columns')
       .insert({ company_id: company.id, title: 'Nova Coluna', color, position: pos, access_all: true })
       .select().single()
+    if (error) { setBoardError('Erro ao criar coluna: ' + error.message); return }
     if (data) setEditingCol(data)
   }
 
@@ -162,6 +165,16 @@ export default function Board() {
       onSearch={setSearch}
       onAddColumn={isAdmin ? handleAddColumn : undefined}
     >
+      {boardError && (
+        <div style={{
+          background:'rgba(239,68,68,.1)', border:'1px solid rgba(239,68,68,.3)',
+          borderRadius:'var(--radius)', padding:'10px 16px', margin:'12px 16px 0',
+          fontSize:13, color:'#fca5a5', display:'flex', justifyContent:'space-between',
+        }}>
+          {boardError}
+          <button style={{ color:'inherit', opacity:.7 }} onClick={() => setBoardError('')}>×</button>
+        </div>
+      )}
       <div className="board-wrapper">
         <div className="board">
           {columns.map(col => (
