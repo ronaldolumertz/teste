@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, Fragment } from 'react'
 import KanbanCard from './KanbanCard'
 
 function fmtCurrency(v) {
@@ -11,19 +11,31 @@ export default function KanbanColumn({
   draggingCardId, onDragCardStart, onDragCardEnd,
   onDropCard, onDropColumn, onTouchDragStart,
 }) {
-  const [dragOver, setDragOver]       = useState(false)
+  const [dragOver, setDragOver]         = useState(false)
+  const [insertBeforeId, setInsertBeforeId] = useState(null)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleVal, setTitleVal]       = useState(column.title)
   const titleRef = useRef(null)
   const total = cards.reduce((s, c) => s + (c.value || 0), 0)
 
-  const handleDragOver = (e) => { e.preventDefault(); setDragOver(true) }
+  const handleDragOver = (e) => { e.preventDefault(); setDragOver(true); setInsertBeforeId(null) }
   const handleDrop = (e) => {
     e.preventDefault(); setDragOver(false)
     const cardId = e.dataTransfer.getData('cardId')
     const colId  = e.dataTransfer.getData('columnId')
-    if (cardId && canEdit) onDropCard(cardId, column.id)
+    if (cardId && canEdit) onDropCard(cardId, column.id, insertBeforeId)
     else if (colId && colId !== column.id) onDropColumn(colId, column.id)
+    setInsertBeforeId(null)
+  }
+
+  const handleCardDragOver = (cardId, isTop) => {
+    setDragOver(true)
+    if (isTop) {
+      setInsertBeforeId(cardId)
+    } else {
+      const idx = cards.findIndex(c => c.id === cardId)
+      setInsertBeforeId(idx < cards.length - 1 ? cards[idx + 1].id : null)
+    }
   }
 
   const startEdit = () => {
@@ -42,9 +54,9 @@ export default function KanbanColumn({
       className={`column${dragOver ? ' drag-over' : ''}`}
       draggable={isAdmin}
       onDragStart={e => { if (!isAdmin) return; e.dataTransfer.setData('columnId', column.id); onDragCardStart?.(null) }}
-      onDragEnd={() => setDragOver(false)}
+      onDragEnd={() => { setDragOver(false); setInsertBeforeId(null) }}
       onDragOver={handleDragOver}
-      onDragLeave={() => setDragOver(false)}
+      onDragLeave={() => { setDragOver(false); setInsertBeforeId(null) }}
       onDrop={handleDrop}
     >
       <div className="column-header">
@@ -86,13 +98,18 @@ export default function KanbanColumn({
           </div>
         )}
         {cards.map(card => (
-          <KanbanCard key={card.id} card={card} canEdit={canEdit}
-            onEdit={onEditCard}
-            onDragStart={onDragCardStart}
-            onDragEnd={onDragCardEnd}
-            dragging={draggingCardId === card.id}
-            onTouchDragStart={onTouchDragStart} />
+          <Fragment key={card.id}>
+            {dragOver && insertBeforeId === card.id && <div className="drop-line" />}
+            <KanbanCard card={card} canEdit={canEdit}
+              onEdit={onEditCard}
+              onDragStart={onDragCardStart}
+              onDragEnd={onDragCardEnd}
+              dragging={draggingCardId === card.id}
+              onTouchDragStart={onTouchDragStart}
+              onCardDragOver={handleCardDragOver} />
+          </Fragment>
         ))}
+        {dragOver && insertBeforeId === null && <div className="drop-line" />}
       </div>
 
       {canEdit && (

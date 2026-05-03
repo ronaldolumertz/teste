@@ -74,6 +74,7 @@
 .card { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:11px; cursor:pointer; user-select:none; transition:border-color var(--transition), box-shadow var(--transition), opacity var(--transition); }
 .card:hover { border-color:var(--border-light); box-shadow:var(--shadow-sm); }
 .card.dragging { opacity:.35; cursor:grabbing; }
+.drop-line { height:3px; background:var(--accent); border-radius:2px; margin:1px 0; flex-shrink:0; }
 .card-header { display:flex; align-items:flex-start; gap:7px; margin-bottom:7px; }
 .card-avatar { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; flex-shrink:0; }
 .card-info { flex:1; min-width:0; }

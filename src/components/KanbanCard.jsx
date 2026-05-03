@@ -18,7 +18,7 @@ function fmtCurrency(v) {
 export default function KanbanCard({
   card, canEdit, onEdit,
   onDragStart, onDragEnd, dragging,
-  onTouchDragStart,
+  onTouchDragStart, onCardDragOver,
 }) {
   const timerRef      = useRef(null)
   const didDragRef    = useRef(false)
@@ -69,6 +69,13 @@ export default function KanbanCard({
       draggable={canEdit}
       onDragStart={e => { e.dataTransfer.setData('cardId', card.id); onDragStart(card.id) }}
       onDragEnd={onDragEnd}
+      onDragOver={e => {
+        e.preventDefault(); e.stopPropagation()
+        if (onCardDragOver) {
+          const rect = e.currentTarget.getBoundingClientRect()
+          onCardDragOver(card.id, e.clientY < rect.top + rect.height / 2)
+        }
+      }}
       onClick={handleClick}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}

@@ -17,6 +17,7 @@ export default function Board() {
 
   const [columns, setColumns]         = useState([])
   const [cards, setCards]             = useState([])
+  const cardsRef                      = useRef([])
   const [myPerms, setMyPerms]         = useState([]) // column_permissions for current user
   const [search, setSearch]           = useState('')
   const [editingCard, setEditingCard] = useState(null)
@@ -30,12 +31,14 @@ export default function Board() {
   const fetchAll = useCallback(async () => {
     const [{ data: cols, error: colErr }, { data: cds }, { data: perms }] = await Promise.all([
       supabase.from('columns').select('*').eq('company_id', company.id).order('position'),
-      supabase.from('cards').select('*').eq('company_id', company.id).order('created_at'),
+      supabase.from('cards').select('*').eq('company_id', company.id).order('position'),
       supabase.from('column_permissions').select('*').eq('profile_id', profile.id),
     ])
     if (colErr) setBoardError(colErr.message)
     setColumns(cols || [])
-    setCards(cds || [])
+    const cardList = cds || []
+    setCards(cardList)
+    cardsRef.current = cardList
     setMyPerms(perms || [])
     setLoading(false)
   }, [company.id, profile.id])
@@ -82,8 +85,10 @@ export default function Board() {
 
   // ── Card CRUD ──────────────────────────────────────────────
   const handleAddCard = async (columnId) => {
+    const colCards = cardsRef.current.filter(c => c.column_id === columnId)
+    const minPos = colCards.length > 0 ? Math.min(...colCards.map(c => c.position ?? 0)) : 100
     const { data } = await supabase.from('cards')
-      .insert({ company_id: company.id, column_id: columnId, name: 'Novo Contato' })
+      .insert({ company_id: company.id, column_id: columnId, name: 'Novo Contato', position: minPos - 100 })
       .select().single()
     if (data) setEditingCard(data)
   }
@@ -172,12 +177,31 @@ export default function Board() {
       const t = e.changedTouches[0]
       const s = touchRef.current; if (!s) return
       if (s.lastColId) document.querySelector(`[data-column-id="${s.lastColId}"]`)?.classList.remove('drag-over')
-      s.ghost.remove()
       s.ghost.style.visibility = 'hidden'
       const under = document.elementFromPoint(t.clientX, t.clientY)
       s.ghost.style.visibility = ''
+      s.ghost.remove()
       const colEl = under?.closest('[data-column-id]')
-      if (colEl) handleDropCard(s.cardId, colEl.dataset.columnId)
+      if (colEl) {
+        const colId = colEl.dataset.columnId
+        let beforeCardId = null
+        const cardEl = under?.closest('[data-card-id]')
+        if (cardEl && cardEl.dataset.cardId !== s.cardId) {
+          const rect = cardEl.getBoundingClientRect()
+          const isTop = t.clientY < rect.top + rect.height / 2
+          const hoveredId = cardEl.dataset.cardId
+          if (isTop) {
+            beforeCardId = hoveredId
+          } else {
+            const colCards = cardsRef.current
+              .filter(c => c.column_id === colId && c.id !== s.cardId)
+              .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+            const idx = colCards.findIndex(c => c.id === hoveredId)
+            beforeCardId = (idx >= 0 && idx < colCards.length - 1) ? colCards[idx + 1].id : null
+          }
+        }
+        handleDropCard(s.cardId, colId, beforeCardId)
+      }
       touchRef.current = null
       setDraggingCardId(null)
       document.removeEventListener('touchmove', onMove)
@@ -189,9 +213,31 @@ export default function Board() {
   }, []) // eslint-disable-line
 
   // ── Drag & drop ────────────────────────────────────────────
-  const handleDropCard = async (cardId, targetColId) => {
-    setCards(prev => prev.map(c => c.id === cardId ? { ...c, column_id: targetColId } : c))
-    await supabase.from('cards').update({ column_id: targetColId }).eq('id', cardId)
+  const handleDropCard = async (cardId, targetColId, beforeCardId = null) => {
+    const colCards = cardsRef.current
+      .filter(c => c.column_id === targetColId && c.id !== cardId)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+
+    let newPos
+    if (colCards.length === 0) {
+      newPos = 0
+    } else if (beforeCardId === null) {
+      newPos = (colCards[colCards.length - 1].position ?? 0) + 100
+    } else {
+      const beforeIdx = colCards.findIndex(c => c.id === beforeCardId)
+      if (beforeIdx <= 0) {
+        newPos = (colCards[0].position ?? 0) - 100
+      } else {
+        newPos = ((colCards[beforeIdx - 1].position ?? 0) + (colCards[beforeIdx].position ?? 0)) / 2
+      }
+    }
+
+    setCards(prev => {
+      const next = prev.map(c => c.id === cardId ? { ...c, column_id: targetColId, position: newPos } : c)
+      cardsRef.current = next
+      return next
+    })
+    await supabase.from('cards').update({ column_id: targetColId, position: newPos }).eq('id', cardId)
   }
 
   const handleDropColumn = async (dragId, overId) => {
