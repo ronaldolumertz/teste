@@ -28,12 +28,15 @@ export default function KanbanCard({
     if (!canEdit || !onTouchDragStart) return
     didDragRef.current = false
     const touch = e.touches[0]
-    touchStartPos.current = { x: touch.clientX, y: touch.clientY }
+    const clientX = touch.clientX
+    const clientY = touch.clientY
+    const target  = e.currentTarget   // capturar antes do evento ser liberado
+    touchStartPos.current = { x: clientX, y: clientY }
 
     timerRef.current = setTimeout(() => {
       didDragRef.current = true
       navigator.vibrate?.(40)
-      onTouchDragStart(card.id, touch.clientX, touch.clientY, e.currentTarget)
+      onTouchDragStart(card.id, clientX, clientY, target)
     }, 380)
   }
 
