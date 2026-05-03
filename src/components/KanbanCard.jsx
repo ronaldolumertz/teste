@@ -1,4 +1,6 @@
-const TAG_CLASS = { hot: 'tag-hot', warm: 'tag-warm', cold: 'tag-cold', vip: 'tag-vip', new: 'tag-new' }
+import { useRef } from 'react'
+
+const TAG_CLASS  = { hot: 'tag-hot', warm: 'tag-warm', cold: 'tag-cold', vip: 'tag-vip', new: 'tag-new' }
 const PRIO_CLASS = { high: 'priority-high', medium: 'priority-medium', low: 'priority-low' }
 
 function initials(name) {
@@ -13,14 +15,61 @@ function fmtCurrency(v) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 }
 
-export default function KanbanCard({ card, canEdit, onEdit, onDragStart, onDragEnd, dragging }) {
+export default function KanbanCard({
+  card, canEdit, onEdit,
+  onDragStart, onDragEnd, dragging,
+  onTouchDragStart,
+}) {
+  const timerRef      = useRef(null)
+  const didDragRef    = useRef(false)
+  const touchStartPos = useRef(null)
+
+  const handleTouchStart = (e) => {
+    if (!canEdit || !onTouchDragStart) return
+    didDragRef.current = false
+    const touch = e.touches[0]
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY }
+
+    timerRef.current = setTimeout(() => {
+      didDragRef.current = true
+      navigator.vibrate?.(40)
+      onTouchDragStart(card.id, touch.clientX, touch.clientY, e.currentTarget)
+    }, 380)
+  }
+
+  const handleTouchMove = (e) => {
+    if (!timerRef.current) return
+    const touch = e.touches[0]
+    const dx = Math.abs(touch.clientX - touchStartPos.current.x)
+    const dy = Math.abs(touch.clientY - touchStartPos.current.y)
+    // Cancel long press if user scrolled more than 6px
+    if (dx > 6 || dy > 6) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }
+
+  const handleTouchEnd = () => {
+    clearTimeout(timerRef.current)
+    timerRef.current = null
+  }
+
+  const handleClick = () => {
+    if (didDragRef.current) { didDragRef.current = false; return }
+    onEdit(card)
+  }
+
   return (
     <div
+      data-card-id={card.id}
       className={`card${dragging ? ' dragging' : ''}`}
       draggable={canEdit}
       onDragStart={e => { e.dataTransfer.setData('cardId', card.id); onDragStart(card.id) }}
       onDragEnd={onDragEnd}
-      onClick={() => onEdit(card)}
+      onClick={handleClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="card-header">
         <div className="card-avatar" style={{ background: avatarColor(card.name) }}>
@@ -55,12 +104,13 @@ export default function KanbanCard({ card, canEdit, onEdit, onDragStart, onDragE
       <div className="card-meta">
         <div className={`priority-dot ${PRIO_CLASS[card.priority]}`} />
         {card.email && (
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
             {card.email}
           </span>
         )}
         {card.notes && (
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginLeft: 'auto' }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            style={{ flexShrink:0, marginLeft:'auto' }}>
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
           </svg>

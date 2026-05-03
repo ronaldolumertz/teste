@@ -9,7 +9,7 @@ export default function KanbanColumn({
   column, cards, isAdmin, canEdit,
   onEditColumn, onRenameColumn, onAddCard, onEditCard,
   draggingCardId, onDragCardStart, onDragCardEnd,
-  onDropCard, onDropColumn,
+  onDropCard, onDropColumn, onTouchDragStart,
 }) {
   const [dragOver, setDragOver]       = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
@@ -38,6 +38,7 @@ export default function KanbanColumn({
 
   return (
     <div
+      data-column-id={column.id}
       className={`column${dragOver ? ' drag-over' : ''}`}
       draggable={isAdmin}
       onDragStart={e => { if (!isAdmin) return; e.dataTransfer.setData('columnId', column.id); onDragCardStart?.(null) }}
@@ -89,7 +90,8 @@ export default function KanbanColumn({
             onEdit={onEditCard}
             onDragStart={onDragCardStart}
             onDragEnd={onDragCardEnd}
-            dragging={draggingCardId === card.id} />
+            dragging={draggingCardId === card.id}
+            onTouchDragStart={onTouchDragStart} />
         ))}
       </div>
 

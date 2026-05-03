@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import Layout from '../components/Layout'
@@ -22,6 +22,7 @@ export default function Board() {
   const [editingCard, setEditingCard] = useState(null)
   const [editingCol, setEditingCol]   = useState(null)
   const [draggingCardId, setDraggingCardId] = useState(null)
+  const touchRef = useRef(null)
   const [loading, setLoading]         = useState(true)
   const [boardError, setBoardError]   = useState('')
 
@@ -133,6 +134,60 @@ export default function Board() {
     fetchAll()
   }
 
+  // ── Touch drag & drop (mobile) ────────────────────────────
+  const handleTouchDragStart = useCallback((cardId, x, y, cardEl) => {
+    setDraggingCardId(cardId)
+    const rect = cardEl.getBoundingClientRect()
+    const ghost = cardEl.cloneNode(true)
+    Object.assign(ghost.style, {
+      position: 'fixed', zIndex: '9999', pointerEvents: 'none',
+      width: rect.width + 'px', opacity: '0.92',
+      left: rect.left + 'px', top: rect.top + 'px',
+      transform: 'scale(1.06) rotate(1.5deg)',
+      boxShadow: '0 24px 48px rgba(0,0,0,.55)',
+      borderRadius: '8px', transition: 'none',
+    })
+    document.body.appendChild(ghost)
+    touchRef.current = { cardId, ghost, offsetX: x - rect.left, offsetY: y - rect.top, lastColId: null }
+
+    const onMove = (e) => {
+      e.preventDefault()
+      const t = e.touches[0]
+      const s = touchRef.current; if (!s) return
+      s.ghost.style.left = (t.clientX - s.offsetX) + 'px'
+      s.ghost.style.top  = (t.clientY - s.offsetY) + 'px'
+      s.ghost.style.visibility = 'hidden'
+      const under = document.elementFromPoint(t.clientX, t.clientY)
+      s.ghost.style.visibility = ''
+      const colEl  = under?.closest('[data-column-id]')
+      const colId  = colEl?.dataset.columnId || null
+      if (colId !== s.lastColId) {
+        if (s.lastColId) document.querySelector(`[data-column-id="${s.lastColId}"]`)?.classList.remove('drag-over')
+        if (colId)       document.querySelector(`[data-column-id="${colId}"]`)?.classList.add('drag-over')
+        s.lastColId = colId
+      }
+    }
+
+    const onEnd = (e) => {
+      const t = e.changedTouches[0]
+      const s = touchRef.current; if (!s) return
+      if (s.lastColId) document.querySelector(`[data-column-id="${s.lastColId}"]`)?.classList.remove('drag-over')
+      s.ghost.remove()
+      s.ghost.style.visibility = 'hidden'
+      const under = document.elementFromPoint(t.clientX, t.clientY)
+      s.ghost.style.visibility = ''
+      const colEl = under?.closest('[data-column-id]')
+      if (colEl) handleDropCard(s.cardId, colEl.dataset.columnId)
+      touchRef.current = null
+      setDraggingCardId(null)
+      document.removeEventListener('touchmove', onMove)
+      document.removeEventListener('touchend', onEnd)
+    }
+
+    document.addEventListener('touchmove', onMove, { passive: false })
+    document.addEventListener('touchend', onEnd)
+  }, []) // eslint-disable-line
+
   // ── Drag & drop ────────────────────────────────────────────
   const handleDropCard = async (cardId, targetColId) => {
     setCards(prev => prev.map(c => c.id === cardId ? { ...c, column_id: targetColId } : c))
@@ -193,6 +248,7 @@ export default function Board() {
               onDragCardEnd={() => setDraggingCardId(null)}
               onDropCard={handleDropCard}
               onDropColumn={handleDropColumn}
+              onTouchDragStart={handleTouchDragStart}
             />
           ))}
 
