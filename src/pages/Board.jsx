@@ -225,7 +225,9 @@ export default function Board() {
       newPos = (colCards[colCards.length - 1].position ?? 0) + 100
     } else {
       const beforeIdx = colCards.findIndex(c => c.id === beforeCardId)
-      if (beforeIdx <= 0) {
+      if (beforeIdx === -1) {
+        newPos = (colCards[colCards.length - 1].position ?? 0) + 100
+      } else if (beforeIdx === 0) {
         newPos = (colCards[0].position ?? 0) - 100
       } else {
         newPos = ((colCards[beforeIdx - 1].position ?? 0) + (colCards[beforeIdx].position ?? 0)) / 2
@@ -233,7 +235,9 @@ export default function Board() {
     }
 
     setCards(prev => {
-      const next = prev.map(c => c.id === cardId ? { ...c, column_id: targetColId, position: newPos } : c)
+      const next = prev
+        .map(c => c.id === cardId ? { ...c, column_id: targetColId, position: newPos } : c)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
       cardsRef.current = next
       return next
     })
