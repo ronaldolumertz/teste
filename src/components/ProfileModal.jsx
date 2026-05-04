@@ -18,9 +18,10 @@ function EyeIcon({ visible }) {
 }
 
 export default function ProfileModal({ onClose }) {
-  const { profile, refreshProfile } = useAuth()
+  const { profile, company, isAdmin, refreshProfile } = useAuth()
   const [name, setName]               = useState(profile?.name || '')
   const [email, setEmail]             = useState(profile?.email || '')
+  const [companyName, setCompanyName] = useState(company?.name || '')
   const [password, setPassword]       = useState('')
   const [confirm, setConfirm]         = useState('')
   const [showPass, setShowPass]       = useState(false)
@@ -33,10 +34,16 @@ export default function ProfileModal({ onClose }) {
     setError(''); setSuccess('')
     if (password && password !== confirm) { setError('As senhas não coincidem.'); return }
     if (!name.trim()) { setError('Nome é obrigatório.'); return }
+    if (isAdmin && !companyName.trim()) { setError('Nome da empresa é obrigatório.'); return }
     setLoading(true)
 
     if (name.trim() !== profile?.name) {
       const { error: e } = await supabase.from('profiles').update({ name: name.trim() }).eq('id', profile.id)
+      if (e) { setError(e.message); setLoading(false); return }
+    }
+
+    if (isAdmin && companyName.trim() !== company?.name) {
+      const { error: e } = await supabase.from('companies').update({ name: companyName.trim() }).eq('id', company.id)
       if (e) { setError(e.message); setLoading(false); return }
     }
 
@@ -74,8 +81,15 @@ export default function ProfileModal({ onClose }) {
           {error   && <div className="auth-error">{error}</div>}
           {success && <div style={{ background:'rgba(34,197,94,.1)', border:'1px solid rgba(34,197,94,.3)', borderRadius:'var(--radius)', padding:'10px 12px', fontSize:13, color:'var(--success)' }}>{success}</div>}
 
+          {isAdmin && (
+            <div className="field">
+              <label>Nome da Empresa</label>
+              <input className="field-input" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Nome da empresa" />
+            </div>
+          )}
+
           <div className="field">
-            <label>Nome</label>
+            <label>Seu Nome</label>
             <input className="field-input" value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" />
           </div>
 
