@@ -23,6 +23,7 @@ export default function Board() {
   const [editingCard, setEditingCard] = useState(null)
   const [editingCol, setEditingCol]   = useState(null)
   const [draggingCardId, setDraggingCardId] = useState(null)
+  const [pendingMove, setPendingMove] = useState(null) // { cardId, targetColId, beforeCardId }
   const touchRef = useRef(null)
   const [loading, setLoading]         = useState(true)
   const [boardError, setBoardError]   = useState('')
@@ -213,7 +214,7 @@ export default function Board() {
   }, []) // eslint-disable-line
 
   // ── Drag & drop ────────────────────────────────────────────
-  const handleDropCard = async (cardId, targetColId, beforeCardId = null) => {
+  const doMoveCard = async (cardId, targetColId, beforeCardId = null) => {
     const colCards = cardsRef.current
       .filter(c => c.column_id === targetColId && c.id !== cardId)
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
@@ -242,6 +243,18 @@ export default function Board() {
       return next
     })
     await supabase.from('cards').update({ column_id: targetColId, position: newPos }).eq('id', cardId)
+  }
+
+  const handleDropCard = (cardId, targetColId, beforeCardId = null) => {
+    const card = cardsRef.current.find(c => c.id === cardId)
+    if (!card) return
+    if (card.column_id === targetColId) {
+      // Same column reorder — no confirmation needed
+      doMoveCard(cardId, targetColId, beforeCardId)
+    } else {
+      // Cross-column move — ask for confirmation
+      setPendingMove({ cardId, targetColId, beforeCardId })
+    }
   }
 
   const handleDropColumn = async (dragId, overId) => {
@@ -334,6 +347,53 @@ export default function Board() {
           onClose={() => setEditingCol(null)}
         />
       )}
+
+      {pendingMove && (() => {
+        const card    = cards.find(c => c.id === pendingMove.cardId)
+        const fromCol = columns.find(c => c.id === card?.column_id)
+        const toCol   = columns.find(c => c.id === pendingMove.targetColId)
+        return (
+          <div className="modal-overlay" onClick={() => setPendingMove(null)}>
+            <div className="modal confirm-modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <span className="modal-title">Mover contato</span>
+                <button className="btn-icon" onClick={() => setPendingMove(null)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+              <div className="modal-body" style={{ gap: 8 }}>
+                <p style={{ fontSize: 14, color: 'var(--text)' }}>
+                  Tem certeza que quer mover <strong>"{card?.name}"</strong>
+                </p>
+                <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', fontSize:13 }}>
+                  <span style={{ display:'flex', alignItems:'center', gap:5 }}>
+                    <span style={{ width:9, height:9, borderRadius:'50%', background: fromCol?.color, display:'inline-block', flexShrink:0 }} />
+                    <strong>{fromCol?.title}</strong>
+                  </span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                  <span style={{ display:'flex', alignItems:'center', gap:5 }}>
+                    <span style={{ width:9, height:9, borderRadius:'50%', background: toCol?.color, display:'inline-block', flexShrink:0 }} />
+                    <strong>{toCol?.title}</strong>
+                  </span>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <div className="spacer" />
+                <button className="btn btn-ghost" onClick={() => setPendingMove(null)}>Cancelar</button>
+                <button className="btn btn-primary" onClick={() => {
+                  const { cardId, targetColId, beforeCardId } = pendingMove
+                  setPendingMove(null)
+                  doMoveCard(cardId, targetColId, beforeCardId)
+                }}>Mover</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </Layout>
   )
 }
