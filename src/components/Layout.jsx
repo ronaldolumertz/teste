@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import UserDrawer from './UserDrawer'
 
-const ROLE_LABELS = { owner: 'Dono', admin: 'Admin', member: 'Membro', viewer: 'Visualizador' }
 const ROLE_COLORS = { owner: '#a855f7', admin: '#6366f1', member: '#22c55e', viewer: '#94a3b8' }
 
 function useTheme() {
@@ -19,8 +19,10 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const location = useLocation()
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme()
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const handleSignOut = async () => {
+    setDrawerOpen(false)
     await signOut()
     navigate('/login')
   }
@@ -98,42 +100,31 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
         </div>
 
         <div className="user-menu">
-          <div className="user-avatar" title={profile?.name}
-            style={{ background: ROLE_COLORS[profile?.role] }}>
+          <button className="user-avatar" title="Menu" style={{ background: ROLE_COLORS[profile?.role], border:'none', cursor:'pointer' }}
+            onClick={() => setDrawerOpen(true)}>
             {profile?.name?.slice(0, 2).toUpperCase()}
-          </div>
-          <div className="user-info">
-            <span className="user-name">{profile?.name}</span>
-            <span className="role-badge-sm" style={{ background: `${ROLE_COLORS[profile?.role]}22`, color: ROLE_COLORS[profile?.role] }}>
-              {ROLE_LABELS[profile?.role]}
-            </span>
-          </div>
-          <button className="btn-icon" onClick={toggleTheme} title={isLight ? 'Modo escuro' : 'Modo claro'}>
-            {isLight ? (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-              </svg>
-            ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="5"/>
-                <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-              </svg>
-            )}
           </button>
-          <button className="btn-icon" onClick={handleSignOut} title="Sair">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
+          <button className="btn-icon" onClick={() => setDrawerOpen(true)} title="Menu">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
         </div>
       </header>
 
       <main className="main-content">{children}</main>
+
+      {drawerOpen && (
+        <UserDrawer
+          profile={profile}
+          isLight={isLight}
+          onToggleTheme={() => { toggleTheme(); }}
+          onSignOut={handleSignOut}
+          onClose={() => setDrawerOpen(false)}
+        />
+      )}
     </div>
   )
 }

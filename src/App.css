@@ -96,6 +96,21 @@
 .priority-medium { background:var(--warning); }
 .priority-low    { background:var(--success); }
 
+/* ── Drawer ──────────────────────────────────────────────── */
+.drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; animation:fadeIn 150ms ease; }
+.drawer { position:fixed; right:0; top:0; bottom:0; width:290px; max-width:90vw; background:var(--surface); border-left:1px solid var(--border); z-index:201; display:flex; flex-direction:column; box-shadow:var(--shadow); animation:slideInRight 200ms ease; }
+@keyframes slideInRight { from { transform:translateX(100%); } to { transform:translateX(0); } }
+.drawer-user { display:flex; align-items:center; gap:12px; padding:18px 16px 12px; border-bottom:1px solid var(--border); }
+.drawer-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#fff; flex-shrink:0; }
+.drawer-name { font-weight:600; font-size:14px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.drawer-email { font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.drawer-role { padding:8px 16px 4px; }
+.drawer-body { flex:1; padding:8px; overflow-y:auto; display:flex; flex-direction:column; gap:2px; }
+.drawer-item { display:flex; align-items:center; gap:12px; width:100%; padding:11px 12px; border-radius:var(--radius); color:var(--text-muted); font-size:14px; font-weight:500; text-align:left; transition:background var(--transition), color var(--transition); }
+.drawer-item:hover { background:var(--surface2); color:var(--text); }
+.drawer-item-danger:hover { background:rgba(239,68,68,.1); color:var(--danger); }
+.drawer-divider { height:1px; background:var(--border); margin:6px 0; }
+
 /* ── Modal ───────────────────────────────────────────────── */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; animation:fadeIn 120ms ease; }
 @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
