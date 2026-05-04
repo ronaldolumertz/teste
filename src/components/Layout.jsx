@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import UserDrawer from './UserDrawer'
+import ProfileModal from './ProfileModal'
 
 const ROLE_COLORS = { owner: '#a855f7', admin: '#6366f1', member: '#22c55e', viewer: '#94a3b8' }
 
@@ -19,12 +20,18 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const location = useLocation()
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme()
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen]     = useState(false)
+  const [profileOpen, setProfileOpen]   = useState(false)
 
   const handleSignOut = async () => {
     setDrawerOpen(false)
     await signOut()
     navigate('/login')
+  }
+
+  const handleEditProfile = () => {
+    setDrawerOpen(false)
+    setProfileOpen(true)
   }
 
   return (
@@ -99,19 +106,10 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
           )}
         </div>
 
-        <div className="user-menu">
-          <button className="user-avatar" title="Menu" style={{ background: ROLE_COLORS[profile?.role], border:'none', cursor:'pointer' }}
-            onClick={() => setDrawerOpen(true)}>
-            {profile?.name?.slice(0, 2).toUpperCase()}
-          </button>
-          <button className="btn-icon" onClick={() => setDrawerOpen(true)} title="Menu">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-          </button>
-        </div>
+        <button className="btn-menu-hamburger" onClick={() => setDrawerOpen(true)} title="Menu"
+          style={{ background: ROLE_COLORS[profile?.role] }}>
+          {profile?.name?.slice(0, 2).toUpperCase()}
+        </button>
       </header>
 
       <main className="main-content">{children}</main>
@@ -120,11 +118,14 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
         <UserDrawer
           profile={profile}
           isLight={isLight}
-          onToggleTheme={() => { toggleTheme(); }}
+          onToggleTheme={toggleTheme}
           onSignOut={handleSignOut}
+          onEditProfile={handleEditProfile}
           onClose={() => setDrawerOpen(false)}
         />
       )}
+
+      {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
     </div>
   )
 }

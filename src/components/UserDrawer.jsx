@@ -1,12 +1,7 @@
-import { useState } from 'react'
-import ProfileModal from './ProfileModal'
-
 const ROLE_LABELS = { owner: 'Dono', admin: 'Admin', member: 'Membro', viewer: 'Visualizador' }
 const ROLE_COLORS = { owner: '#a855f7', admin: '#6366f1', member: '#22c55e', viewer: '#94a3b8' }
 
-export default function UserDrawer({ profile, isLight, onToggleTheme, onSignOut, onClose }) {
-  const [showProfile, setShowProfile] = useState(false)
-
+export default function UserDrawer({ profile, isLight, onToggleTheme, onSignOut, onEditProfile, onClose }) {
   return (
     <>
       <div className="drawer-overlay" onClick={onClose} />
@@ -33,13 +28,14 @@ export default function UserDrawer({ profile, isLight, onToggleTheme, onSignOut,
         </div>
 
         <nav className="drawer-body">
-          <button className="drawer-item" onClick={() => { setShowProfile(true) }}>
+          <button className="drawer-item" onClick={onEditProfile}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
               <circle cx="12" cy="7" r="4"/>
             </svg>
             Editar Perfil
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft:'auto', opacity:.4 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              style={{ marginLeft:'auto', opacity:.4 }}>
               <path d="m9 18 6-6-6-6"/>
             </svg>
           </button>
@@ -73,8 +69,6 @@ export default function UserDrawer({ profile, isLight, onToggleTheme, onSignOut,
           </button>
         </nav>
       </div>
-
-      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
     </>
   )
 }
