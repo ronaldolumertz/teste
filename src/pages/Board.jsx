@@ -154,7 +154,7 @@ export default function Board() {
       borderRadius: '8px', transition: 'none',
     })
     document.body.appendChild(ghost)
-    touchRef.current = { cardId, ghost, offsetX: x - rect.left, offsetY: y - rect.top, lastColId: null }
+    touchRef.current = { cardId, ghost, offsetX: x - rect.left, offsetY: y - rect.top, lastColId: null, lastCardEl: null, lastIsTop: null }
 
     const onMove = (e) => {
       e.preventDefault()
@@ -165,33 +165,45 @@ export default function Board() {
       s.ghost.style.visibility = 'hidden'
       const under = document.elementFromPoint(t.clientX, t.clientY)
       s.ghost.style.visibility = ''
-      const colEl  = under?.closest('[data-column-id]')
-      const colId  = colEl?.dataset.columnId || null
+
+      const colEl = under?.closest('[data-column-id]')
+      const colId = colEl?.dataset.columnId || null
       if (colId !== s.lastColId) {
         if (s.lastColId) document.querySelector(`[data-column-id="${s.lastColId}"]`)?.classList.remove('drag-over')
         if (colId)       document.querySelector(`[data-column-id="${colId}"]`)?.classList.add('drag-over')
         s.lastColId = colId
       }
+
+      const cardEl = under?.closest('[data-card-id]')
+      const newCardEl = (cardEl && cardEl.dataset.cardId !== s.cardId) ? cardEl : null
+      if (s.lastCardEl && s.lastCardEl !== newCardEl) {
+        s.lastCardEl.classList.remove('drag-insert-before', 'drag-insert-after')
+      }
+      if (newCardEl) {
+        const rect = newCardEl.getBoundingClientRect()
+        const isTop = t.clientY < rect.top + rect.height / 2
+        newCardEl.classList.toggle('drag-insert-before', isTop)
+        newCardEl.classList.toggle('drag-insert-after', !isTop)
+        s.lastCardEl = newCardEl
+        s.lastIsTop  = isTop
+      } else {
+        s.lastCardEl = null
+        s.lastIsTop  = null
+      }
     }
 
     const onEnd = (e) => {
-      const t = e.changedTouches[0]
       const s = touchRef.current; if (!s) return
       if (s.lastColId) document.querySelector(`[data-column-id="${s.lastColId}"]`)?.classList.remove('drag-over')
-      s.ghost.style.visibility = 'hidden'
-      const under = document.elementFromPoint(t.clientX, t.clientY)
-      s.ghost.style.visibility = ''
+      if (s.lastCardEl) s.lastCardEl.classList.remove('drag-insert-before', 'drag-insert-after')
       s.ghost.remove()
-      const colEl = under?.closest('[data-column-id]')
-      if (colEl) {
-        const colId = colEl.dataset.columnId
+
+      if (s.lastColId) {
+        const colId = s.lastColId
         let beforeCardId = null
-        const cardEl = under?.closest('[data-card-id]')
-        if (cardEl && cardEl.dataset.cardId !== s.cardId) {
-          const rect = cardEl.getBoundingClientRect()
-          const isTop = t.clientY < rect.top + rect.height / 2
-          const hoveredId = cardEl.dataset.cardId
-          if (isTop) {
+        if (s.lastCardEl) {
+          const hoveredId = s.lastCardEl.dataset.cardId
+          if (s.lastIsTop) {
             beforeCardId = hoveredId
           } else {
             const colCards = cardsRef.current
