@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import UserDrawer from './UserDrawer'
 import ProfileModal from './ProfileModal'
-
-const ROLE_COLORS = { owner: '#a855f7', admin: '#6366f1', member: '#22c55e', viewer: '#94a3b8' }
 
 function useTheme() {
   const [light, setLight] = useState(() => localStorage.getItem('theme') === 'light')
@@ -20,19 +18,20 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const location = useLocation()
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme()
-  const [drawerOpen, setDrawerOpen]     = useState(false)
-  const [profileOpen, setProfileOpen]   = useState(false)
+  const [drawerOpen, setDrawerOpen]   = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [prodOpen, setProdOpen]       = useState(false)
+  const prodRef = useRef(null)
 
-  const handleSignOut = async () => {
-    setDrawerOpen(false)
-    await signOut()
-    navigate('/login')
-  }
+  useEffect(() => {
+    const handler = e => { if (prodRef.current && !prodRef.current.contains(e.target)) setProdOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
-  const handleEditProfile = () => {
-    setDrawerOpen(false)
-    setProfileOpen(true)
-  }
+  const handleSignOut = async () => { setDrawerOpen(false); await signOut(); navigate('/login') }
+  const handleEditProfile = () => { setDrawerOpen(false); setProfileOpen(true) }
+  const isProdPath = location.pathname.startsWith('/app/products')
 
   return (
     <div className="app">
@@ -57,6 +56,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
               </svg>
               Board
             </Link>
+
             {isAdmin && (
               <Link to="/app/team" className={`nav-link${location.pathname === '/app/team' ? ' active' : ''}`}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -67,16 +67,45 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
                 Equipe
               </Link>
             )}
+
+            <div className="nav-dropdown-wrap" ref={prodRef}>
+              <button className={`nav-link${isProdPath ? ' active' : ''}`} onClick={() => setProdOpen(v => !v)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                </svg>
+                Produtos
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                  style={{ transition:'transform 150ms', transform: prodOpen ? 'rotate(180deg)' : 'none', opacity:.6 }}>
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </button>
+              {prodOpen && (
+                <div className="nav-dropdown">
+                  <Link to="/app/products" className="nav-dropdown-item" onClick={() => setProdOpen(false)}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+                      <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+                      <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    Listar Produtos
+                  </Link>
+                  {isAdmin && (
+                    <Link to="/app/products/new" className="nav-dropdown-item" onClick={() => setProdOpen(false)}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M12 5v14M5 12h14"/>
+                      </svg>
+                      Cadastrar Produto
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
           </nav>
 
           {stats && (
             <div className="header-stats">
-              <div className="stat-pill blue">
-                <strong>{stats.cards}</strong> contatos
-              </div>
-              <div className="stat-pill green">
-                <strong>{stats.value}</strong> pipeline
-              </div>
+              <div className="stat-pill blue"><strong>{stats.cards}</strong> contatos</div>
+              <div className="stat-pill green"><strong>{stats.value}</strong> pipeline</div>
             </div>
           )}
 
@@ -120,6 +149,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
       {drawerOpen && (
         <UserDrawer
           profile={profile}
+          isAdmin={isAdmin}
           isLight={isLight}
           onToggleTheme={toggleTheme}
           onSignOut={handleSignOut}
