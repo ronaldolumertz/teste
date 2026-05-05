@@ -10,7 +10,10 @@ export default function ProductForm() {
   const { company } = useAuth()
   const isEdit = !!id
 
-  const [form, setForm]     = useState({ name: '', description: '', type: 'unit', price: '', active: true })
+  const [form, setForm] = useState({
+    name: '', description: '', type: 'unit', price: '',
+    active: true, customizable: false, max_attachments: '3',
+  })
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
@@ -18,7 +21,11 @@ export default function ProductForm() {
   useEffect(() => {
     if (!isEdit) return
     supabase.from('products').select('*').eq('id', id).single().then(({ data }) => {
-      if (data) setForm({ name: data.name, description: data.description, type: data.type, price: String(data.price), active: data.active })
+      if (data) setForm({
+        name: data.name, description: data.description, type: data.type,
+        price: String(data.price), active: data.active,
+        customizable: data.customizable, max_attachments: String(data.max_attachments),
+      })
       setLoading(false)
     })
   }, [id, isEdit])
@@ -27,13 +34,20 @@ export default function ProductForm() {
 
   const handleSave = async () => {
     setError('')
-    if (!form.name.trim())          { setError('Nome é obrigatório'); return }
-    if (form.price === '')           { setError('Preço é obrigatório'); return }
-    if (isNaN(Number(form.price)))   { setError('Preço inválido'); return }
+    if (!form.name.trim())        { setError('Nome é obrigatório'); return }
+    if (form.price === '')         { setError('Preço é obrigatório'); return }
+    if (isNaN(Number(form.price))) { setError('Preço inválido'); return }
+    const maxAtt = parseInt(form.max_attachments)
+    if (form.customizable && (isNaN(maxAtt) || maxAtt < 1 || maxAtt > 20)) {
+      setError('Limite de anexos deve ser entre 1 e 20'); return
+    }
     setSaving(true)
     const payload = {
       name: form.name.trim(), description: form.description.trim(),
-      type: form.type, price: Number(form.price), active: form.active, company_id: company.id,
+      type: form.type, price: Number(form.price), active: form.active,
+      customizable: form.customizable,
+      max_attachments: form.customizable ? maxAtt : 0,
+      company_id: company.id,
     }
     const op = isEdit
       ? supabase.from('products').update(payload).eq('id', id)
@@ -65,7 +79,7 @@ export default function ProductForm() {
           <div className="field">
             <label>Nome do Produto *</label>
             <input className="field-input" value={form.name} onChange={e => set('name', e.target.value)}
-              placeholder="Ex: Tapete 3D, Instalação…" autoFocus />
+              placeholder="Ex: Tapete 3D, Capacho Personalizado…" autoFocus />
           </div>
 
           <div className="field">
@@ -101,6 +115,45 @@ export default function ProductForm() {
                 onChange={e => set('price', e.target.value)} placeholder="0,00" />
             </div>
           </div>
+
+          {/* ── Personalização ── */}
+          <div className="field">
+            <label>Personalização</label>
+            <div className="custom-toggle-card" onClick={() => set('customizable', !form.customizable)}
+              style={{ cursor: 'pointer' }}>
+              <div className="custom-toggle-info">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>Produto Personalizável</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                    Cliente poderá descrever a arte e enviar arquivos ao adicionar este produto
+                  </div>
+                </div>
+              </div>
+              <div className={`toggle-switch${form.customizable ? ' on' : ''}`} />
+            </div>
+          </div>
+
+          {form.customizable && (
+            <div className="field">
+              <label>Limite de Anexos por Pedido</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input className="field-input" type="number" min="1" max="20"
+                  value={form.max_attachments}
+                  onChange={e => set('max_attachments', e.target.value)}
+                  style={{ maxWidth: 100 }}
+                  placeholder="3" />
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                  arquivos por pedido (máx. 20)
+                </span>
+              </div>
+              <span style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>
+                Formatos aceitos: imagens, PDF, AI, PSD, EPS, SVG (máx. 10 MB por arquivo)
+              </span>
+            </div>
+          )}
 
           <div className="field">
             <label>Status</label>

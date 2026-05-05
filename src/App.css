@@ -321,3 +321,40 @@ select.field-input { cursor:pointer; appearance:none; background-image:url("data
 .cp-calc { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-muted); background:var(--surface); border-radius:var(--radius); padding:8px 10px; }
 .cp-form-actions { display:flex; gap:8px; }
 
+/* ── Card products — personalização ─────────────────────── */
+.cp-item-body { flex:1; display:flex; flex-direction:column; gap:6px; }
+.cp-item-top { display:flex; align-items:flex-start; gap:8px; }
+.cp-custom-badge { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:600; padding:1px 6px; border-radius:20px; background:rgba(168,85,247,.15); color:#c4b5fd; margin-left:6px; vertical-align:middle; }
+.cp-notes-display { display:flex; align-items:flex-start; gap:6px; font-size:12px; color:var(--text-muted); background:var(--surface); border-radius:var(--radius); padding:7px 10px; line-height:1.4; }
+.cp-notes-display svg { flex-shrink:0; margin-top:1px; color:var(--accent); }
+.cp-attachments { display:flex; flex-wrap:wrap; gap:6px; }
+.cp-attachment-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 9px; background:var(--surface); border:1px solid var(--border); border-radius:20px; font-size:11px; color:var(--text-muted); transition:all var(--transition); cursor:pointer; }
+.cp-attachment-chip:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+.cp-att-size { color:var(--text-dim); font-size:10px; }
+
+/* Seção de personalização no form de adição */
+.cp-custom-section { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:12px; display:flex; flex-direction:column; gap:10px; }
+.cp-custom-label { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.5px; }
+.cp-file-area { display:flex; flex-direction:column; gap:8px; }
+.cp-file-btn { display:flex; align-items:center; gap:8px; padding:10px 12px; border:2px dashed var(--border); border-radius:var(--radius); font-size:13px; color:var(--text-muted); transition:all var(--transition); width:100%; }
+.cp-file-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+.cp-file-limit { margin-left:auto; font-size:11px; opacity:.6; }
+.cp-file-list { display:flex; flex-direction:column; gap:4px; }
+.cp-file-item { display:flex; align-items:center; gap:8px; padding:6px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); }
+.cp-file-name { flex:1; font-size:12px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.cp-file-size { font-size:11px; color:var(--text-dim); white-space:nowrap; flex-shrink:0; }
+.cp-upload-progress { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--text-muted); }
+.cp-upload-bar { height:4px; background:var(--accent); border-radius:2px; transition:width 200ms ease; }
+
+/* Toggle switch (personalização) */
+.custom-toggle-card { display:flex; align-items:center; gap:12px; padding:12px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-lg); transition:border-color var(--transition); }
+.custom-toggle-card:hover { border-color:var(--border-light); }
+.custom-toggle-info { display:flex; align-items:flex-start; gap:10px; flex:1; }
+.toggle-switch { width:36px; height:20px; border-radius:10px; background:var(--border); transition:background var(--transition); position:relative; flex-shrink:0; }
+.toggle-switch::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:transform var(--transition); }
+.toggle-switch.on { background:var(--accent); }
+.toggle-switch.on::after { transform:translateX(16px); }
+
+/* Badge personalizável na lista */
+.product-custom-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:600; padding:1px 6px; border-radius:20px; background:rgba(168,85,247,.15); color:#c4b5fd; margin-left:6px; vertical-align:middle; white-space:nowrap; }
+
