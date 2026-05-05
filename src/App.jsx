@@ -11,7 +11,7 @@ import './App.css'
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user, profile, loading } = useAuth()
-  if (loading) return (
+  if (loading || (user && !profile)) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'var(--bg)' }}>
       <div className="spinner" />
     </div>
