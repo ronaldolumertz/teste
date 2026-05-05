@@ -37,14 +37,10 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
     <div className="app">
       <header className="header">
         <div className="header-brand">
-          <div className="header-logo">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-              <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
-            </svg>
-            <span className="header-logo-text">KanbanCRM</span>
-          </div>
-          <span className="company-name">{company?.name}</span>
+          {company?.logo_url
+            ? <img src={company.logo_url} className="company-logo-header" alt={company.name} />
+            : <span className="company-name-header">{company?.name}</span>
+          }
         </div>
 
         <div className="header-center">

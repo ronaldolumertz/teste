@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -18,7 +18,7 @@ function EyeIcon({ visible }) {
 }
 
 export default function ProfileModal({ onClose }) {
-  const { profile, company, isAdmin, refreshProfile } = useAuth()
+  const { profile, company, isAdmin, isOwner, refreshProfile } = useAuth()
   const [name, setName]               = useState(profile?.name || '')
   const [email, setEmail]             = useState(profile?.email || '')
   const [companyName, setCompanyName] = useState(company?.name || '')
@@ -27,8 +27,10 @@ export default function ProfileModal({ onClose }) {
   const [showPass, setShowPass]       = useState(false)
   const [showConf, setShowConf]       = useState(false)
   const [loading, setLoading]         = useState(false)
+  const [logoUploading, setLogoUploading] = useState(false)
   const [error, setError]             = useState('')
   const [success, setSuccess]         = useState('')
+  const logoInputRef = useRef(null)
 
   const handleSave = async () => {
     setError(''); setSuccess('')
@@ -65,6 +67,37 @@ export default function ProfileModal({ onClose }) {
     setLoading(false)
   }
 
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) { setError('A logomarca deve ter no máximo 2 MB.'); return }
+    setLogoUploading(true); setError(''); setSuccess('')
+    const ext = file.name.split('.').pop().toLowerCase()
+    const path = `${company.id}/logo.${ext}`
+    const { error: upErr } = await supabase.storage.from('company-logos').upload(path, file, { upsert: true, contentType: file.type })
+    if (upErr) { setError(upErr.message); setLogoUploading(false); return }
+    const { data: urlData } = supabase.storage.from('company-logos').getPublicUrl(path)
+    const { error: dbErr } = await supabase.from('companies').update({ logo_url: `${urlData.publicUrl}?t=${Date.now()}` }).eq('id', company.id)
+    if (dbErr) { setError(dbErr.message); setLogoUploading(false); return }
+    await refreshProfile()
+    setSuccess('Logomarca atualizada com sucesso!')
+    setLogoUploading(false)
+    e.target.value = ''
+  }
+
+  const handleLogoRemove = async () => {
+    if (!company?.logo_url) return
+    setLogoUploading(true); setError(''); setSuccess('')
+    const parts = company.logo_url.split('/company-logos/')
+    const bucketPath = parts[1]?.split('?')[0]
+    if (bucketPath) await supabase.storage.from('company-logos').remove([bucketPath])
+    const { error: dbErr } = await supabase.from('companies').update({ logo_url: null }).eq('id', company.id)
+    if (dbErr) { setError(dbErr.message); setLogoUploading(false); return }
+    await refreshProfile()
+    setSuccess('Logomarca removida.')
+    setLogoUploading(false)
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
@@ -85,6 +118,36 @@ export default function ProfileModal({ onClose }) {
             <div className="field">
               <label>Nome da Empresa</label>
               <input className="field-input" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Nome da empresa" />
+            </div>
+          )}
+
+          {isOwner && (
+            <div className="field">
+              <label>Logomarca da Empresa</label>
+              <div className="logo-upload-area">
+                {company?.logo_url ? (
+                  <img src={company.logo_url} className="logo-preview-img" alt="Logo" />
+                ) : (
+                  <div className="logo-placeholder">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                      <path d="m21 15-5-5L5 21"/>
+                    </svg>
+                  </div>
+                )}
+                <div className="logo-upload-actions">
+                  <input ref={logoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
+                  <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => logoInputRef.current?.click()} disabled={logoUploading}>
+                    {logoUploading ? 'Enviando…' : company?.logo_url ? 'Trocar Logo' : 'Enviar Logo'}
+                  </button>
+                  {company?.logo_url && (
+                    <button className="btn btn-ghost" style={{ fontSize: 12, color: 'var(--danger)' }} onClick={handleLogoRemove} disabled={logoUploading}>
+                      Remover
+                    </button>
+                  )}
+                  <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>PNG, JPG, SVG · máx. 2 MB</span>
+                </div>
+              </div>
             </div>
           )}
 
