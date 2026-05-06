@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 const ROLE_LABELS = { owner: 'Dono', admin: 'Admin', member: 'Membro', viewer: 'Visualizador' }
 const ROLE_COLORS = { owner: '#a855f7', admin: '#6366f1', member: '#22c55e', viewer: '#94a3b8' }
 
-export default function UserDrawer({ profile, isAdmin, isLight, onToggleTheme, onSignOut, onEditProfile, onClose }) {
+export default function UserDrawer({ profile, isAdmin, isSuperAdmin, isLight, onToggleTheme, onSignOut, onEditProfile, onClose }) {
   const [prodOpen, setProdOpen] = useState(false)
   const navigate = useNavigate()
 
@@ -119,6 +119,19 @@ export default function UserDrawer({ profile, isAdmin, isLight, onToggleTheme, o
                 </button>
               )}
             </div>
+          )}
+
+          {isSuperAdmin && (
+            <>
+              <div className="drawer-divider" />
+              <button className="drawer-item" onClick={() => goTo('/admin')}
+                style={{ color:'var(--accent)' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                Super Admin
+              </button>
+            </>
           )}
 
           <div className="drawer-divider" />

@@ -79,13 +79,14 @@ export function AuthProvider({ children }) {
     setCompany(null)
   }
 
-  const isAdmin = profile?.role === 'owner' || profile?.role === 'admin'
-  const isOwner = profile?.role === 'owner'
+  const isAdmin      = profile?.role === 'owner' || profile?.role === 'admin'
+  const isOwner      = profile?.role === 'owner'
+  const isSuperAdmin = profile?.is_superadmin === true
 
   return (
     <AuthContext.Provider value={{
       user, profile, company, loading,
-      isAdmin, isOwner,
+      isAdmin, isOwner, isSuperAdmin,
       signUp, signIn, signOut,
       refreshProfile: () => user && fetchProfile(user.id),
     }}>

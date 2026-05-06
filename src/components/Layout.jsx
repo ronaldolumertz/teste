@@ -14,7 +14,7 @@ function useTheme() {
 }
 
 export default function Layout({ children, stats, search, onSearch, onAddColumn }) {
-  const { profile, company, isAdmin, signOut } = useAuth()
+  const { profile, company, isAdmin, isSuperAdmin, signOut } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme()
@@ -61,6 +61,15 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
                 Equipe
+              </Link>
+            )}
+
+            {isSuperAdmin && (
+              <Link to="/admin" className={`nav-link${location.pathname.startsWith('/admin') ? ' active' : ''}`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                Admin
               </Link>
             )}
 
@@ -146,6 +155,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
         <UserDrawer
           profile={profile}
           isAdmin={isAdmin}
+          isSuperAdmin={isSuperAdmin}
           isLight={isLight}
           onToggleTheme={toggleTheme}
           onSignOut={handleSignOut}
