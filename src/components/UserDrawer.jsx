@@ -4,20 +4,40 @@ import { useNavigate } from 'react-router-dom'
 const ROLE_LABELS = { owner: 'Dono', admin: 'Admin', member: 'Membro', viewer: 'Visualizador' }
 const ROLE_COLORS = { owner: '#a855f7', admin: '#6366f1', member: '#22c55e', viewer: '#94a3b8' }
 
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
+}
+
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream
+}
+
 export default function UserDrawer({
   profile, isAdmin, isSuperAdmin, isLight,
   onToggleTheme, onSignOut, onEditProfile, onClose,
   installPrompt, onInstall,
   notifPermission, onToggleNotifications,
 }) {
-  const [prodOpen, setProdOpen] = useState(false)
+  const [prodOpen, setProdOpen]       = useState(false)
+  const [configOpen, setConfigOpen]   = useState(false)
+  const [installOpen, setInstallOpen] = useState(false)
   const navigate = useNavigate()
 
   const goTo = (path) => { onClose(); navigate(path) }
 
-  const notifSupported = 'Notification' in window && 'serviceWorker' in navigator
-  const notifEnabled   = notifPermission === 'granted'
-  const notifDenied    = notifPermission === 'denied'
+  const standalone      = isStandalone()
+  const ios             = isIOS()
+  const notifSupported  = 'Notification' in window && 'serviceWorker' in navigator
+  const notifEnabled    = notifPermission === 'granted'
+  const notifDenied     = notifPermission === 'denied'
+
+  const handleInstallClick = () => {
+    if (installPrompt) {
+      onInstall()
+    } else {
+      setInstallOpen(v => !v)
+    }
+  }
 
   return (
     <>
@@ -95,48 +115,98 @@ export default function UserDrawer({
             {isLight ? 'Modo Escuro' : 'Modo Claro'}
           </button>
 
-          {/* Notificações push */}
-          {notifSupported && !notifDenied && (
-            <button className="drawer-item" onClick={onToggleNotifications}>
-              {notifEnabled ? (
+          <div className="drawer-divider" />
+
+          {/* ── Instalar App ── */}
+          {!standalone && (
+            <>
+              <button className="drawer-item drawer-item-install" onClick={handleInstallClick}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
                 </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>
+                Instalar App
+                {!installPrompt && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    style={{ marginLeft:'auto', transition:'transform 150ms', transform: installOpen ? 'rotate(180deg)' : 'none', opacity:.4 }}>
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                )}
+              </button>
+
+              {installOpen && !installPrompt && (
+                <div className="drawer-install-tip">
+                  {ios ? (
+                    <>
+                      <p>No Safari, toque em <strong>Compartilhar</strong></p>
+                      <p>↓ depois em <strong>"Adicionar à Tela de Início"</strong></p>
+                    </>
+                  ) : (
+                    <>
+                      <p>No Chrome, toque nos <strong>3 pontos</strong> (⋮)</p>
+                      <p>↓ depois em <strong>"Adicionar à tela inicial"</strong></p>
+                    </>
+                  )}
+                </div>
               )}
-              {notifEnabled ? 'Desativar Notificações' : 'Ativar Notificações'}
-              <span className={`drawer-notif-badge ${notifEnabled ? 'on' : 'off'}`}>
-                {notifEnabled ? 'Ativo' : 'Inativo'}
-              </span>
-            </button>
+            </>
           )}
-          {notifDenied && (
+
+          {standalone && (
             <div className="drawer-item drawer-item-muted">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                <line x1="1" y1="1" x2="23" y2="23"/>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
               </svg>
-              Notificações bloqueadas
+              App instalado
             </div>
           )}
 
-          {/* Instalar app */}
-          {installPrompt && (
-            <button className="drawer-item drawer-item-install" onClick={() => { onClose(); onInstall() }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Instalar App
-            </button>
+          {/* ── Configurar App ── */}
+          <button className="drawer-item" onClick={() => setConfigOpen(v => !v)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              <path d="M4.93 4.93a10 10 0 0 0 0 14.14"/>
+            </svg>
+            Configurar App
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              style={{ marginLeft:'auto', transition:'transform 150ms', transform: configOpen ? 'rotate(180deg)' : 'none', opacity:.4 }}>
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </button>
+
+          {configOpen && (
+            <div className="drawer-subitems">
+              {notifSupported && !notifDenied && (
+                <button className="drawer-subitem" onClick={onToggleNotifications}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                  </svg>
+                  {notifEnabled ? 'Desativar notificações' : 'Ativar notificações'}
+                  <span className={`drawer-notif-badge ${notifEnabled ? 'on' : 'off'}`} style={{ marginLeft:'auto' }}>
+                    {notifEnabled ? 'Ativo' : 'Inativo'}
+                  </span>
+                </button>
+              )}
+              {notifDenied && (
+                <div className="drawer-subitem drawer-item-muted">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                  Notificações bloqueadas pelo browser
+                </div>
+              )}
+              {!notifSupported && (
+                <div className="drawer-subitem drawer-item-muted">
+                  Notificações não suportadas neste browser
+                </div>
+              )}
+            </div>
           )}
 
           <div className="drawer-divider" />
