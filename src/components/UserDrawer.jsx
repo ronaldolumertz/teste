@@ -14,8 +14,9 @@ export default function UserDrawer({
   installPrompt, onInstall,
   notifPermission, onToggleNotifications,
 }) {
-  const [prodOpen, setProdOpen]     = useState(false)
-  const [configOpen, setConfigOpen] = useState(false)
+  const [prodOpen, setProdOpen]       = useState(false)
+  const [configOpen, setConfigOpen]   = useState(false)
+  const [installTip, setInstallTip]   = useState(false)
   const navigate = useNavigate()
 
   const goTo = (path) => { onClose(); navigate(path) }
@@ -103,16 +104,32 @@ export default function UserDrawer({
 
           <div className="drawer-divider" />
 
-          {/* Instalar App — só aparece quando o browser suporta instalação direta */}
-          {!standalone && installPrompt && (
-            <button className="drawer-item drawer-item-install" onClick={() => { onClose(); onInstall() }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Instalar App
-            </button>
+          {/* Instalar App */}
+          {!standalone && (
+            <>
+              <button className="drawer-item drawer-item-install" onClick={() => {
+                if (installPrompt) { onClose(); onInstall() }
+                else setInstallTip(v => !v)
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Instalar App
+                {!installPrompt && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    style={{ marginLeft:'auto', transition:'transform 150ms', transform: installTip ? 'rotate(180deg)' : 'none', opacity:.4 }}>
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                )}
+              </button>
+              {installTip && !installPrompt && (
+                <div className="drawer-install-tip">
+                  Use o menu do seu browser e escolha <strong>"Adicionar à tela inicial"</strong> ou <strong>"Instalar app"</strong>.
+                </div>
+              )}
+            </>
           )}
 
           {standalone && (
