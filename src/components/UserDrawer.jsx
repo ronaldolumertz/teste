@@ -8,36 +8,22 @@ function isStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
 }
 
-function isIOS() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream
-}
-
 export default function UserDrawer({
   profile, isAdmin, isSuperAdmin, isLight,
   onToggleTheme, onSignOut, onEditProfile, onClose,
   installPrompt, onInstall,
   notifPermission, onToggleNotifications,
 }) {
-  const [prodOpen, setProdOpen]       = useState(false)
-  const [configOpen, setConfigOpen]   = useState(false)
-  const [installOpen, setInstallOpen] = useState(false)
+  const [prodOpen, setProdOpen]     = useState(false)
+  const [configOpen, setConfigOpen] = useState(false)
   const navigate = useNavigate()
 
   const goTo = (path) => { onClose(); navigate(path) }
 
-  const standalone      = isStandalone()
-  const ios             = isIOS()
-  const notifSupported  = 'Notification' in window && 'serviceWorker' in navigator
-  const notifEnabled    = notifPermission === 'granted'
-  const notifDenied     = notifPermission === 'denied'
-
-  const handleInstallClick = () => {
-    if (installPrompt) {
-      onInstall()
-    } else {
-      setInstallOpen(v => !v)
-    }
-  }
+  const standalone     = isStandalone()
+  const notifSupported = 'Notification' in window && 'serviceWorker' in navigator
+  const notifEnabled   = notifPermission === 'granted'
+  const notifDenied    = notifPermission === 'denied'
 
   return (
     <>
@@ -117,40 +103,16 @@ export default function UserDrawer({
 
           <div className="drawer-divider" />
 
-          {/* ── Instalar App ── */}
-          {!standalone && (
-            <>
-              <button className="drawer-item drawer-item-install" onClick={handleInstallClick}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                Instalar App
-                {!installPrompt && (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                    style={{ marginLeft:'auto', transition:'transform 150ms', transform: installOpen ? 'rotate(180deg)' : 'none', opacity:.4 }}>
-                    <path d="m6 9 6 6 6-6"/>
-                  </svg>
-                )}
-              </button>
-
-              {installOpen && !installPrompt && (
-                <div className="drawer-install-tip">
-                  {ios ? (
-                    <>
-                      <p>No Safari, toque em <strong>Compartilhar</strong></p>
-                      <p>↓ depois em <strong>"Adicionar à Tela de Início"</strong></p>
-                    </>
-                  ) : (
-                    <>
-                      <p>No Chrome, toque nos <strong>3 pontos</strong> (⋮)</p>
-                      <p>↓ depois em <strong>"Adicionar à tela inicial"</strong></p>
-                    </>
-                  )}
-                </div>
-              )}
-            </>
+          {/* Instalar App — só aparece quando o browser suporta instalação direta */}
+          {!standalone && installPrompt && (
+            <button className="drawer-item drawer-item-install" onClick={() => { onClose(); onInstall() }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Instalar App
+            </button>
           )}
 
           {standalone && (
@@ -163,7 +125,7 @@ export default function UserDrawer({
             </div>
           )}
 
-          {/* ── Configurar App ── */}
+          {/* Configurar App */}
           <button className="drawer-item" onClick={() => setConfigOpen(v => !v)}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="3"/>
@@ -198,12 +160,12 @@ export default function UserDrawer({
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                     <line x1="1" y1="1" x2="23" y2="23"/>
                   </svg>
-                  Notificações bloqueadas pelo browser
+                  Notificações bloqueadas
                 </div>
               )}
               {!notifSupported && (
                 <div className="drawer-subitem drawer-item-muted">
-                  Notificações não suportadas neste browser
+                  Browser não suporta notificações
                 </div>
               )}
             </div>
@@ -211,7 +173,7 @@ export default function UserDrawer({
 
           <div className="drawer-divider" />
 
-          {/* Produtos submenu */}
+          {/* Produtos */}
           <button className="drawer-item" onClick={() => setProdOpen(v => !v)}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
