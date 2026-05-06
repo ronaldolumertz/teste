@@ -4,12 +4,27 @@ import { useAuth } from '../contexts/AuthContext'
 import UserDrawer from './UserDrawer'
 import ProfileModal from './ProfileModal'
 
-function useTheme() {
-  const [light, setLight] = useState(() => localStorage.getItem('theme') === 'light')
+function useTheme(userId) {
+  const [light, setLight] = useState(false)
+
+  // Load saved theme whenever the logged-in user changes
+  useEffect(() => {
+    if (!userId) {
+      setLight(false)
+      document.documentElement.classList.remove('light')
+      return
+    }
+    const saved = localStorage.getItem(`theme_${userId}`) === 'light'
+    setLight(saved)
+    document.documentElement.classList.toggle('light', saved)
+  }, [userId])
+
+  // Persist and apply theme changes
   useEffect(() => {
     document.documentElement.classList.toggle('light', light)
-    localStorage.setItem('theme', light ? 'light' : 'dark')
-  }, [light])
+    if (userId) localStorage.setItem(`theme_${userId}`, light ? 'light' : 'dark')
+  }, [light, userId])
+
   return [light, () => setLight(v => !v)]
 }
 
@@ -17,7 +32,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const { profile, company, isAdmin, isSuperAdmin, signOut } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const [isLight, toggleTheme] = useTheme()
+  const [isLight, toggleTheme] = useTheme(profile?.id)
   const [drawerOpen, setDrawerOpen]   = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [prodOpen, setProdOpen]       = useState(false)
