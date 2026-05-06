@@ -28,6 +28,8 @@ export default function Board() {
   const touchRef = useRef(null)
   const [loading, setLoading]         = useState(true)
   const [boardError, setBoardError]   = useState('')
+  const boardWrapperRef = useRef(null)
+  const panRef = useRef(null)
 
   // ── Fetch ──────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
@@ -247,6 +249,31 @@ export default function Board() {
     await Promise.all(cols.map((c, i) => supabase.from('columns').update({ position: i }).eq('id', c.id)))
   }
 
+  // ── Board pan (click-drag outside cards) ──────────────────
+  const handleBoardMouseDown = useCallback((e) => {
+    const el = e.target
+    if (el.closest('.column-card') || el.closest('.column') || el.closest('.add-column-btn')) return
+    e.preventDefault()
+    panRef.current = { startX: e.clientX, scrollLeft: boardWrapperRef.current.scrollLeft }
+    boardWrapperRef.current.style.cursor = 'grabbing'
+    boardWrapperRef.current.style.userSelect = 'none'
+
+    const onMove = (ev) => {
+      if (!panRef.current) return
+      const dx = ev.clientX - panRef.current.startX
+      boardWrapperRef.current.scrollLeft = panRef.current.scrollLeft - dx
+    }
+    const onUp = () => {
+      panRef.current = null
+      boardWrapperRef.current.style.cursor = ''
+      boardWrapperRef.current.style.userSelect = ''
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [])
+
   if (loading) return (
     <Layout stats={stats} search={search} onSearch={setSearch} onAddColumn={isAdmin ? handleAddColumn : undefined}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -272,7 +299,7 @@ export default function Board() {
           <button style={{ color:'inherit', opacity:.7 }} onClick={() => setBoardError('')}>×</button>
         </div>
       )}
-      <div className="board-wrapper">
+      <div className="board-wrapper" ref={boardWrapperRef} onMouseDown={handleBoardMouseDown}>
         <div className="board">
           {columns.map(col => (
             <KanbanColumn
