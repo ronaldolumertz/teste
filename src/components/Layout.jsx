@@ -43,6 +43,10 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const [profileOpen, setProfileOpen] = useState(false)
   const [prodOpen, setProdOpen]       = useState(false)
   const prodRef = useRef(null)
+  const [installPrompt, setInstallPrompt] = useState(null)
+  const [installDismissed, setInstallDismissed] = useState(
+    () => sessionStorage.getItem('pwa-dismissed') === '1'
+  )
 
   useEffect(() => {
     const handler = e => { if (prodRef.current && !prodRef.current.contains(e.target)) setProdOpen(false) }
@@ -50,9 +54,27 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  useEffect(() => {
+    const handler = e => { e.preventDefault(); setInstallPrompt(e) }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstall = async () => {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'accepted') setInstallPrompt(null)
+  }
+  const handleDismissInstall = () => {
+    sessionStorage.setItem('pwa-dismissed', '1')
+    setInstallDismissed(true)
+  }
+
   const handleSignOut = async () => { setDrawerOpen(false); await signOut(); navigate('/login') }
   const handleEditProfile = () => { setDrawerOpen(false); setProfileOpen(true) }
   const isProdPath = location.pathname.startsWith('/app/products')
+  const showInstallBanner = installPrompt && !installDismissed
 
   return (
     <div className="app">
@@ -169,6 +191,27 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
           </svg>
         </button>
       </header>
+
+      {showInstallBanner && (
+        <div className="pwa-install-banner">
+          <div className="pwa-install-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+            </svg>
+          </div>
+          <div className="pwa-install-text">
+            <span className="pwa-install-title">Instalar KanbanCRM</span>
+            <span className="pwa-install-sub">Acesso rápido na tela inicial</span>
+          </div>
+          <button className="btn btn-primary pwa-install-btn" onClick={handleInstall}>Instalar</button>
+          <button className="btn-icon pwa-install-close" onClick={handleDismissInstall}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      )}
 
       <main className="main-content">{children}</main>
 
