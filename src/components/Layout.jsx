@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import UserDrawer from './UserDrawer'
@@ -7,7 +7,7 @@ import ProfileModal from './ProfileModal'
 function useTheme(userId) {
   const [light, setLight] = useState(false)
 
-  // Load saved theme whenever the logged-in user changes
+  // Load user's theme on login / clear on logout
   useEffect(() => {
     if (!userId) {
       setLight(false)
@@ -17,15 +17,21 @@ function useTheme(userId) {
     const saved = localStorage.getItem(`theme_${userId}`) === 'light'
     setLight(saved)
     document.documentElement.classList.toggle('light', saved)
+    // Cleanup: remove class when Layout unmounts (logout / session expire)
+    return () => document.documentElement.classList.remove('light')
   }, [userId])
 
-  // Persist and apply theme changes
-  useEffect(() => {
-    document.documentElement.classList.toggle('light', light)
-    if (userId) localStorage.setItem(`theme_${userId}`, light ? 'light' : 'dark')
-  }, [light, userId])
+  // Toggle is the only place we SAVE — avoids overwriting on init
+  const toggle = useCallback(() => {
+    setLight(prev => {
+      const next = !prev
+      document.documentElement.classList.toggle('light', next)
+      if (userId) localStorage.setItem(`theme_${userId}`, next ? 'light' : 'dark')
+      return next
+    })
+  }, [userId])
 
-  return [light, () => setLight(v => !v)]
+  return [light, toggle]
 }
 
 export default function Layout({ children, stats, search, onSearch, onAddColumn }) {
