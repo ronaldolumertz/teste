@@ -1,14 +1,23 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 const ROLE_LABELS = { owner: 'Dono', admin: 'Admin', member: 'Membro', viewer: 'Visualizador' }
 const ROLE_COLORS = { owner: '#a855f7', admin: '#6366f1', member: '#22c55e', viewer: '#94a3b8' }
 
-export default function UserDrawer({ profile, isAdmin, isSuperAdmin, isLight, onToggleTheme, onSignOut, onEditProfile, onClose }) {
+export default function UserDrawer({
+  profile, isAdmin, isSuperAdmin, isLight,
+  onToggleTheme, onSignOut, onEditProfile, onClose,
+  installPrompt, onInstall,
+  notifPermission, onToggleNotifications,
+}) {
   const [prodOpen, setProdOpen] = useState(false)
   const navigate = useNavigate()
 
   const goTo = (path) => { onClose(); navigate(path) }
+
+  const notifSupported = 'Notification' in window && 'serviceWorker' in navigator
+  const notifEnabled   = notifPermission === 'granted'
+  const notifDenied    = notifPermission === 'denied'
 
   return (
     <>
@@ -85,6 +94,50 @@ export default function UserDrawer({ profile, isAdmin, isSuperAdmin, isLight, on
             )}
             {isLight ? 'Modo Escuro' : 'Modo Claro'}
           </button>
+
+          {/* Notificações push */}
+          {notifSupported && !notifDenied && (
+            <button className="drawer-item" onClick={onToggleNotifications}>
+              {notifEnabled ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+              )}
+              {notifEnabled ? 'Desativar Notificações' : 'Ativar Notificações'}
+              <span className={`drawer-notif-badge ${notifEnabled ? 'on' : 'off'}`}>
+                {notifEnabled ? 'Ativo' : 'Inativo'}
+              </span>
+            </button>
+          )}
+          {notifDenied && (
+            <div className="drawer-item drawer-item-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+              Notificações bloqueadas
+            </div>
+          )}
+
+          {/* Instalar app */}
+          {installPrompt && (
+            <button className="drawer-item drawer-item-install" onClick={() => { onClose(); onInstall() }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Instalar App
+            </button>
+          )}
 
           <div className="drawer-divider" />
 

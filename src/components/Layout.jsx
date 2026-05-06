@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import UserDrawer from './UserDrawer'
 import ProfileModal from './ProfileModal'
+import { subscribePush, unsubscribePush, getNotificationPermission } from '../lib/push'
 
 function useTheme(userId) {
   const [light, setLight] = useState(false)
@@ -70,6 +71,19 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
     sessionStorage.setItem('pwa-dismissed', '1')
     setInstallDismissed(true)
   }
+
+  // ── Push notifications ──────────────────────────────────
+  const [notifPermission, setNotifPermission] = useState(() => getNotificationPermission())
+  const handleToggleNotifications = useCallback(async () => {
+    if (!profile?.id) return
+    if (notifPermission === 'granted') {
+      await unsubscribePush(profile.id)
+      setNotifPermission('default')
+    } else {
+      const sub = await subscribePush(profile.id)
+      setNotifPermission(sub ? 'granted' : getNotificationPermission())
+    }
+  }, [profile?.id, notifPermission])
 
   const handleSignOut = async () => { setDrawerOpen(false); await signOut(); navigate('/login') }
   const handleEditProfile = () => { setDrawerOpen(false); setProfileOpen(true) }
@@ -222,6 +236,10 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
           isSuperAdmin={isSuperAdmin}
           isLight={isLight}
           onToggleTheme={toggleTheme}
+          installPrompt={installPrompt}
+          onInstall={handleInstall}
+          notifPermission={notifPermission}
+          onToggleNotifications={handleToggleNotifications}
           onSignOut={handleSignOut}
           onEditProfile={handleEditProfile}
           onClose={() => setDrawerOpen(false)}

@@ -6,20 +6,13 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       base: '/teste/',
       scope: '/teste/',
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
-        navigateFallback: '/teste/index.html',
-        navigateFallbackDenylist: [/^\/teste\/assets\//],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\//,
-            handler: 'NetworkFirst',
-            options: { cacheName: 'supabase-cache', networkTimeoutSeconds: 5 },
-          },
-        ],
       },
       manifest: {
         name: 'KanbanCRM',
@@ -38,4 +31,7 @@ export default defineConfig({
     }),
   ],
   base: '/teste/',
+  define: {
+    __VAPID_PUBLIC_KEY__: JSON.stringify('BLdQsjFMh7Av246obw_cl4a4ggOD4bATABaeFJgQaauRVSD1ucqnkMsvlgw48t4NrpMj-U2sgjG0zwT4MIRi2Do'),
+  },
 })
