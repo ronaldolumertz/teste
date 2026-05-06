@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import Layout from '../components/Layout'
@@ -330,7 +331,7 @@ export default function Board() {
         const card    = cards.find(c => c.id === pendingMove.cardId)
         const fromCol = columns.find(c => c.id === card?.column_id)
         const toCol   = columns.find(c => c.id === pendingMove.targetColId)
-        return (
+        return createPortal(
           <div className="modal-overlay" onClick={() => setPendingMove(null)}>
             <div className="modal confirm-modal" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
@@ -369,7 +370,8 @@ export default function Board() {
                 }}>Mover</button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )
       })()}
     </Layout>

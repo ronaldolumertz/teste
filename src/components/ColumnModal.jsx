@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose }) {
   const [title, setTitle]         = useState(column.title)
@@ -25,7 +26,7 @@ export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose 
 
   const save = () => onSave({ title: title.trim() || column.title, color, access_all: accessAll, time_rules: rules })
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal confirm-modal" role="dialog">
         <div className="modal-header">
@@ -165,6 +166,7 @@ export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose 
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

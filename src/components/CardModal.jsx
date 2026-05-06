@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 
 const TAGS       = ['hot', 'warm', 'cold', 'vip', 'new']
@@ -147,7 +148,7 @@ export default function CardModal({ card, columns, canEdit, onSave, onDelete, on
     onSave({ ...form, value: cardProds.reduce((s, cp) => s + Number(cp.total), 0) })
   }
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}
       onKeyDown={e => e.key === 'Escape' && onClose()}>
       <div className="modal" role="dialog" aria-modal="true">
@@ -482,6 +483,7 @@ export default function CardModal({ card, columns, canEdit, onSave, onDelete, on
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
