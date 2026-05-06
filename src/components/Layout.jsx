@@ -44,7 +44,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const [profileOpen, setProfileOpen] = useState(false)
   const [prodOpen, setProdOpen]       = useState(false)
   const prodRef = useRef(null)
-  const [installPrompt, setInstallPrompt] = useState(null)
+  const [installPrompt, setInstallPrompt] = useState(() => window.__pwaPrompt ?? null)
   const [installDismissed, setInstallDismissed] = useState(
     () => sessionStorage.getItem('pwa-dismissed') === '1'
   )
@@ -56,6 +56,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   }, [])
 
   useEffect(() => {
+    if (window.__pwaPrompt) setInstallPrompt(window.__pwaPrompt)
     const handler = e => { e.preventDefault(); setInstallPrompt(e) }
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
