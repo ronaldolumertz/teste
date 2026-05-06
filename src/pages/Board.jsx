@@ -87,9 +87,9 @@ export default function Board() {
   // ── Card CRUD ──────────────────────────────────────────────
   const handleAddCard = async (columnId) => {
     const colCards = cardsRef.current.filter(c => c.column_id === columnId)
-    const minPos = colCards.length > 0 ? Math.min(...colCards.map(c => c.position ?? 0)) : 100
+    const maxPos = colCards.length > 0 ? Math.max(...colCards.map(c => c.position ?? 0)) : 0
     const { data } = await supabase.from('cards')
-      .insert({ company_id: company.id, column_id: columnId, name: 'Novo Contato', position: minPos - 100 })
+      .insert({ company_id: company.id, column_id: columnId, name: 'Novo Contato', position: maxPos + 100 })
       .select().single()
     if (data) setEditingCard(data)
   }
@@ -154,7 +154,8 @@ export default function Board() {
       borderRadius: '8px', transition: 'none',
     })
     document.body.appendChild(ghost)
-    touchRef.current = { cardId, ghost, offsetX: x - rect.left, offsetY: y - rect.top, lastColId: null, lastCardEl: null, lastIsTop: null }
+    const sourceColId = cardsRef.current.find(c => c.id === cardId)?.column_id
+    touchRef.current = { cardId, sourceColId, ghost, offsetX: x - rect.left, offsetY: y - rect.top, lastColId: null }
 
     const onMove = (e) => {
       e.preventDefault()
@@ -168,52 +169,23 @@ export default function Board() {
 
       const colEl = under?.closest('[data-column-id]')
       const colId = colEl?.dataset.columnId || null
+      // Only highlight if dropping into a different column
+      const validTarget = colId && colId !== s.sourceColId
       if (colId !== s.lastColId) {
         if (s.lastColId) document.querySelector(`[data-column-id="${s.lastColId}"]`)?.classList.remove('drag-over')
-        if (colId)       document.querySelector(`[data-column-id="${colId}"]`)?.classList.add('drag-over')
+        if (validTarget) document.querySelector(`[data-column-id="${colId}"]`)?.classList.add('drag-over')
         s.lastColId = colId
-      }
-
-      const cardEl = under?.closest('[data-card-id]')
-      const newCardEl = (cardEl && cardEl.dataset.cardId !== s.cardId) ? cardEl : null
-      if (s.lastCardEl && s.lastCardEl !== newCardEl) {
-        s.lastCardEl.classList.remove('drag-insert-before', 'drag-insert-after')
-      }
-      if (newCardEl) {
-        const rect = newCardEl.getBoundingClientRect()
-        const isTop = t.clientY < rect.top + rect.height / 2
-        newCardEl.classList.toggle('drag-insert-before', isTop)
-        newCardEl.classList.toggle('drag-insert-after', !isTop)
-        s.lastCardEl = newCardEl
-        s.lastIsTop  = isTop
-      } else {
-        s.lastCardEl = null
-        s.lastIsTop  = null
       }
     }
 
     const onEnd = (e) => {
       const s = touchRef.current; if (!s) return
       if (s.lastColId) document.querySelector(`[data-column-id="${s.lastColId}"]`)?.classList.remove('drag-over')
-      if (s.lastCardEl) s.lastCardEl.classList.remove('drag-insert-before', 'drag-insert-after')
       s.ghost.remove()
 
-      if (s.lastColId) {
-        const colId = s.lastColId
-        let beforeCardId = null
-        if (s.lastCardEl) {
-          const hoveredId = s.lastCardEl.dataset.cardId
-          if (s.lastIsTop) {
-            beforeCardId = hoveredId
-          } else {
-            const colCards = cardsRef.current
-              .filter(c => c.column_id === colId && c.id !== s.cardId)
-              .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-            const idx = colCards.findIndex(c => c.id === hoveredId)
-            beforeCardId = (idx >= 0 && idx < colCards.length - 1) ? colCards[idx + 1].id : null
-          }
-        }
-        handleDropCard(s.cardId, colId, beforeCardId)
+      // Only drop if target column is different from source
+      if (s.lastColId && s.lastColId !== s.sourceColId) {
+        handleDropCard(s.cardId, s.lastColId)  // always appends to bottom
       }
       touchRef.current = null
       setDraggingCardId(null)
@@ -257,16 +229,10 @@ export default function Board() {
     await supabase.from('cards').update({ column_id: targetColId, position: newPos }).eq('id', cardId)
   }
 
-  const handleDropCard = (cardId, targetColId, beforeCardId = null) => {
+  const handleDropCard = (cardId, targetColId) => {
     const card = cardsRef.current.find(c => c.id === cardId)
-    if (!card) return
-    if (card.column_id === targetColId) {
-      // Same column reorder — no confirmation needed
-      doMoveCard(cardId, targetColId, beforeCardId)
-    } else {
-      // Cross-column move — ask for confirmation
-      setPendingMove({ cardId, targetColId, beforeCardId })
-    }
+    if (!card || card.column_id === targetColId) return  // block same-column drag
+    setPendingMove({ cardId, targetColId, beforeCardId: null })  // always append to bottom
   }
 
   const handleDropColumn = async (dragId, overId) => {
