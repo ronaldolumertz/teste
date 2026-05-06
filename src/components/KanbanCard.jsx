@@ -14,11 +14,29 @@ function avatarColor(name) {
 function fmtCurrency(v) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 }
+function timeElapsed(dateStr) {
+  if (!dateStr) return null
+  const ms = Date.now() - new Date(dateStr)
+  const mins = Math.floor(ms / 60000)
+  if (mins < 1)  return 'agora'
+  if (mins < 60) return `${mins}min`
+  const h = Math.floor(ms / 3600000)
+  if (h < 24)    return `${h}h`
+  const d = Math.floor(ms / 86400000)
+  if (d < 30)    return `${d}d`
+  return `${Math.floor(d / 30)}m`
+}
+function matchRule(enteredAt, rules) {
+  if (!rules?.length || !enteredAt) return null
+  const hours = (Date.now() - new Date(enteredAt)) / 3600000
+  const sorted = [...rules].sort((a, b) => (a.maxHours ?? Infinity) - (b.maxHours ?? Infinity))
+  return sorted.find(r => r.maxHours === null || hours <= r.maxHours) ?? sorted[sorted.length - 1]
+}
 
 export default function KanbanCard({
-  card, canEdit, onEdit,
+  card, canEdit, onEdit, timeRules,
   onDragStart, onDragEnd, dragging,
-  onTouchDragStart, onCardDragOver,
+  onTouchDragStart,
 }) {
   const timerRef      = useRef(null)
   const didDragRef    = useRef(false)
@@ -62,20 +80,18 @@ export default function KanbanCard({
     onEdit(card)
   }
 
+  const rule    = matchRule(card.column_entered_at, timeRules)
+  const elapsed = timeElapsed(card.column_entered_at)
+
   return (
     <div
       data-card-id={card.id}
       className={`card${dragging ? ' dragging' : ''}`}
+      style={rule ? { borderLeft: `3px solid ${rule.color}` } : undefined}
       draggable={canEdit}
       onDragStart={e => { e.dataTransfer.setData('cardId', card.id); onDragStart(card.id) }}
       onDragEnd={onDragEnd}
-      onDragOver={e => {
-        e.preventDefault(); e.stopPropagation()
-        if (onCardDragOver) {
-          const rect = e.currentTarget.getBoundingClientRect()
-          onCardDragOver(card.id, e.clientY < rect.top + rect.height / 2)
-        }
-      }}
+      onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
       onClick={handleClick}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -126,6 +142,20 @@ export default function KanbanCard({
           </svg>
         )}
       </div>
+
+      {elapsed && (
+        <div className="card-time-row">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+          </svg>
+          <span className="card-time-elapsed">{elapsed}</span>
+          {rule && (
+            <span className="card-time-label" style={{ background: rule.color + '28', color: rule.color }}>
+              {rule.label}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }

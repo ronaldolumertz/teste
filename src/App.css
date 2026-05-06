@@ -352,6 +352,21 @@ select.field-input { cursor:pointer; appearance:none; background-image:url("data
 /* Badge personalizável na lista */
 .product-custom-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:600; padding:1px 6px; border-radius:20px; background:rgba(168,85,247,.15); color:#c4b5fd; margin-left:6px; vertical-align:middle; white-space:nowrap; }
 
+/* ── Card time badge ─────────────────────────────────────── */
+.card-time-row { display:flex; align-items:center; gap:5px; margin-top:6px; }
+.card-time-row svg { color:var(--text-dim); flex-shrink:0; }
+.card-time-elapsed { font-size:10px; font-weight:600; color:var(--text-dim); }
+.card-time-label { font-size:10px; font-weight:700; padding:1px 7px; border-radius:20px; white-space:nowrap; margin-left:2px; }
+
+/* ── Time rules in ColumnModal ───────────────────────────── */
+.time-rules-list { display:flex; flex-direction:column; gap:6px; }
+.time-rule-row { display:flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:6px 8px; }
+.time-rule-color-input { width:26px; height:26px; border:none; background:none; padding:0; cursor:pointer; border-radius:4px; flex-shrink:0; }
+.time-rule-label { flex:1; min-width:70px; padding:4px 8px; font-size:12px; }
+.time-rule-hours { width:56px; padding:4px 6px; font-size:12px; text-align:center; }
+.time-rule-sep { font-size:11px; color:var(--text-dim); white-space:nowrap; flex-shrink:0; }
+.time-rule-unlimited { font-size:11px; color:var(--text-dim); flex:1; font-style:italic; }
+
 /* ── Admin / Super Admin ─────────────────────────────────── */
 .admin-page { padding:24px; max-width:920px; }
 .admin-companies { display:flex; flex-direction:column; gap:10px; }

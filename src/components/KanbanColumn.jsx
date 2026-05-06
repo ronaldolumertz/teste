@@ -87,6 +87,7 @@ export default function KanbanColumn({
         )}
         {cards.map(card => (
           <KanbanCard key={card.id} card={card} canEdit={canEdit}
+            timeRules={column.time_rules || []}
             onEdit={onEditCard}
             onDragStart={onDragCardStart}
             onDragEnd={onDragCardEnd}

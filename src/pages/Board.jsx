@@ -123,7 +123,7 @@ export default function Board() {
 
   const handleSaveColumn = async (form) => {
     await supabase.from('columns').update({
-      title: form.title, color: form.color, access_all: form.access_all,
+      title: form.title, color: form.color, access_all: form.access_all, time_rules: form.time_rules,
     }).eq('id', editingCol.id)
     setEditingCol(null)
     fetchAll()
@@ -226,7 +226,7 @@ export default function Board() {
       cardsRef.current = next
       return next
     })
-    await supabase.from('cards').update({ column_id: targetColId, position: newPos }).eq('id', cardId)
+    await supabase.from('cards').update({ column_id: targetColId, position: newPos, column_entered_at: new Date().toISOString() }).eq('id', cardId)
   }
 
   const handleDropCard = (cardId, targetColId) => {
