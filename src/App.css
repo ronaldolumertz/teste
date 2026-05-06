@@ -366,6 +366,7 @@ select.field-input { cursor:pointer; appearance:none; background-image:url("data
 .time-rule-hours { width:56px; padding:4px 6px; font-size:12px; text-align:center; }
 .time-rule-sep { font-size:11px; color:var(--text-dim); white-space:nowrap; flex-shrink:0; }
 .time-rule-unlimited { font-size:11px; color:var(--text-dim); flex:1; font-style:italic; }
+.time-rule-select { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:4px 4px; font-size:11px; color:var(--text); cursor:pointer; flex-shrink:0; }
 
 /* ── Admin / Super Admin ─────────────────────────────────── */
 .admin-page { padding:24px; max-width:920px; }

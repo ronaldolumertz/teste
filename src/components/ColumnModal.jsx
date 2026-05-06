@@ -1,20 +1,25 @@
 import { useState, useEffect, useRef } from 'react'
 
-const RULE_COLORS = ['#22c55e','#84cc16','#eab308','#f97316','#ef4444','#ec4899','#a855f7','#6366f1','#38bdf8','#94a3b8']
-
 export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose }) {
   const [title, setTitle]         = useState(column.title)
   const [color, setColor]         = useState(column.color)
   const [accessAll, setAccessAll] = useState(column.access_all ?? false)
   const [rules, setRules]         = useState(() =>
-    (column.time_rules || []).map(r => ({ ...r, id: r.id || crypto.randomUUID() }))
+    (column.time_rules || []).map(r => ({
+      id:        r.id        || crypto.randomUUID(),
+      label:     r.label     || '',
+      condition: r.condition || (r.maxHours === null ? 'mais que' : 'até'),
+      value:     r.value     ?? r.maxHours ?? 1,
+      unit:      r.unit      || 'h',
+      color:     r.color     || '#22c55e',
+    }))
   )
   const [confirmDelete, setConfirmDelete] = useState(false)
   const inputRef = useRef(null)
 
   useEffect(() => { inputRef.current?.focus(); inputRef.current?.select() }, [])
 
-  const addRule    = () => setRules(r => [...r, { id: crypto.randomUUID(), label: '', maxHours: 24, color: '#22c55e' }])
+  const addRule    = () => setRules(r => [...r, { id: crypto.randomUUID(), label: '', condition: 'até', value: 1, unit: 'h', color: '#22c55e' }])
   const updateRule = (id, k, v) => setRules(r => r.map(x => x.id === id ? { ...x, [k]: v } : x))
   const removeRule = (id) => setRules(r => r.filter(x => x.id !== id))
 
@@ -83,7 +88,7 @@ export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose 
           <div className="field">
             <label>Regras de Cor por Tempo na Coluna</label>
             <div className="time-rules-list">
-              {rules.map((rule, i) => (
+              {rules.map((rule) => (
                 <div key={rule.id} className="time-rule-row">
                   <input type="color" className="time-rule-color-input"
                     value={rule.color}
@@ -93,25 +98,22 @@ export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose 
                     value={rule.label}
                     onChange={e => updateRule(rule.id, 'label', e.target.value)}
                     placeholder="Nome (ex: Em dia)" />
-                  {rule.maxHours !== null ? (
-                    <>
-                      <span className="time-rule-sep">até</span>
-                      <input className="field-input time-rule-hours" type="number" min="0.1" step="0.5"
-                        value={rule.maxHours}
-                        onChange={e => updateRule(rule.id, 'maxHours', parseFloat(e.target.value) || 1)} />
-                      <span className="time-rule-sep">h</span>
-                      <button className="btn-icon" style={{ fontSize:13, padding:'4px 6px', opacity:.5 }}
-                        title="Sem limite (pega o restante)"
-                        onClick={() => updateRule(rule.id, 'maxHours', null)}>∞</button>
-                    </>
-                  ) : (
-                    <>
-                      <span className="time-rule-unlimited">demais</span>
-                      <button className="btn-icon" style={{ fontSize:11, padding:'3px 6px', opacity:.5 }}
-                        title="Definir limite de horas"
-                        onClick={() => updateRule(rule.id, 'maxHours', 24)}>h</button>
-                    </>
-                  )}
+                  <select className="time-rule-select"
+                    value={rule.condition || 'até'}
+                    onChange={e => updateRule(rule.id, 'condition', e.target.value)}>
+                    <option value="até">até</option>
+                    <option value="mais que">mais que</option>
+                  </select>
+                  <input className="field-input time-rule-hours" type="number" min="1" step="1"
+                    value={rule.value ?? 1}
+                    onChange={e => updateRule(rule.id, 'value', parseFloat(e.target.value) || 1)} />
+                  <select className="time-rule-select"
+                    value={rule.unit || 'h'}
+                    onChange={e => updateRule(rule.id, 'unit', e.target.value)}>
+                    <option value="min">min</option>
+                    <option value="h">h</option>
+                    <option value="d">d</option>
+                  </select>
                   <button className="btn-icon danger" onClick={() => removeRule(rule.id)} title="Remover regra">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
@@ -129,8 +131,7 @@ export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose 
             </button>
             {rules.length > 0 && (
               <p style={{ fontSize:11, color:'var(--text-dim)', marginTop:6, lineHeight:1.5 }}>
-                As regras são aplicadas em ordem crescente. A última sem limite aplica-se ao restante.
-                Para criar uma regra "demais", adicione uma e deixe sem horas (clique no ∞).
+                As regras são avaliadas na ordem em que aparecem. A primeira que corresponder ao tempo atual será aplicada.
               </p>
             )}
           </div>

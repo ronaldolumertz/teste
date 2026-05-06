@@ -26,11 +26,25 @@ function timeElapsed(dateStr) {
   if (d < 30)    return `${d}d`
   return `${Math.floor(d / 30)}m`
 }
+function toHours(value, unit) {
+  if (unit === 'min') return (value || 1) / 60
+  if (unit === 'd')   return (value || 1) * 24
+  return value || 1
+}
 function matchRule(enteredAt, rules) {
   if (!rules?.length || !enteredAt) return null
-  const hours = (Date.now() - new Date(enteredAt)) / 3600000
-  const sorted = [...rules].sort((a, b) => (a.maxHours ?? Infinity) - (b.maxHours ?? Infinity))
-  return sorted.find(r => r.maxHours === null || hours <= r.maxHours) ?? sorted[sorted.length - 1]
+  const elapsed = (Date.now() - new Date(enteredAt)) / 3600000
+  for (const r of rules) {
+    // legacy format (maxHours)
+    if (!('condition' in r)) {
+      if (r.maxHours === null || elapsed <= r.maxHours) return r
+      continue
+    }
+    const threshold = toHours(r.value, r.unit)
+    if ((r.condition === 'até'      && elapsed <= threshold) ||
+        (r.condition === 'mais que' && elapsed >  threshold)) return r
+  }
+  return null
 }
 
 export default function KanbanCard({
