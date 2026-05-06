@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose }) {
   const [title, setTitle]         = useState(column.title)
   const [color, setColor]         = useState(column.color)
-  const [accessAll, setAccessAll] = useState(column.access_all ?? true)
+  const [accessAll, setAccessAll] = useState(column.access_all ?? false)
   const inputRef = useRef(null)
 
   useEffect(() => { inputRef.current?.focus(); inputRef.current?.select() }, [])
