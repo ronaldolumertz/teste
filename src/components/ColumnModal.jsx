@@ -113,7 +113,7 @@ export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose 
                       <option value="até">até</option>
                       <option value="mais que">mais que</option>
                     </select>
-                    <input className="field-input time-rule-hours" type="number" min="1" step="1"
+                    <input className="time-rule-hours" type="number" min="1" step="1"
                       value={rule.value ?? 1}
                       onChange={e => updateRule(rule.id, 'value', parseFloat(e.target.value) || 1)} />
                     <select className="time-rule-select"
