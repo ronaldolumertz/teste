@@ -90,35 +90,39 @@ export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose 
             <div className="time-rules-list">
               {rules.map((rule) => (
                 <div key={rule.id} className="time-rule-row">
-                  <input type="color" className="time-rule-color-input"
-                    value={rule.color}
-                    onChange={e => updateRule(rule.id, 'color', e.target.value)}
-                    title="Cor da regra" />
-                  <input className="field-input time-rule-label"
-                    value={rule.label}
-                    onChange={e => updateRule(rule.id, 'label', e.target.value)}
-                    placeholder="Nome (ex: Em dia)" />
-                  <select className="time-rule-select"
-                    value={rule.condition || 'até'}
-                    onChange={e => updateRule(rule.id, 'condition', e.target.value)}>
-                    <option value="até">até</option>
-                    <option value="mais que">mais que</option>
-                  </select>
-                  <input className="field-input time-rule-hours" type="number" min="1" step="1"
-                    value={rule.value ?? 1}
-                    onChange={e => updateRule(rule.id, 'value', parseFloat(e.target.value) || 1)} />
-                  <select className="time-rule-select"
-                    value={rule.unit || 'h'}
-                    onChange={e => updateRule(rule.id, 'unit', e.target.value)}>
-                    <option value="min">min</option>
-                    <option value="h">h</option>
-                    <option value="d">d</option>
-                  </select>
-                  <button className="btn-icon danger" onClick={() => removeRule(rule.id)} title="Remover regra">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                    </svg>
-                  </button>
+                  <div className="time-rule-top">
+                    <input type="color" className="time-rule-color-input"
+                      value={rule.color}
+                      onChange={e => updateRule(rule.id, 'color', e.target.value)}
+                      title="Cor da regra" />
+                    <input className="field-input time-rule-label"
+                      value={rule.label}
+                      onChange={e => updateRule(rule.id, 'label', e.target.value)}
+                      placeholder="Nome (ex: Em dia)" />
+                    <button className="btn-icon danger" onClick={() => removeRule(rule.id)} title="Remover">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="time-rule-bottom">
+                    <select className="time-rule-select"
+                      value={rule.condition || 'até'}
+                      onChange={e => updateRule(rule.id, 'condition', e.target.value)}>
+                      <option value="até">até</option>
+                      <option value="mais que">mais que</option>
+                    </select>
+                    <input className="field-input time-rule-hours" type="number" min="1" step="1"
+                      value={rule.value ?? 1}
+                      onChange={e => updateRule(rule.id, 'value', parseFloat(e.target.value) || 1)} />
+                    <select className="time-rule-select"
+                      value={rule.unit || 'h'}
+                      onChange={e => updateRule(rule.id, 'unit', e.target.value)}>
+                      <option value="min">min</option>
+                      <option value="h">h</option>
+                      <option value="d">d</option>
+                    </select>
+                  </div>
                 </div>
               ))}
             </div>

@@ -359,14 +359,14 @@ select.field-input { cursor:pointer; appearance:none; background-image:url("data
 .card-time-label { font-size:10px; font-weight:700; padding:1px 7px; border-radius:20px; white-space:nowrap; margin-left:2px; }
 
 /* ── Time rules in ColumnModal ───────────────────────────── */
-.time-rules-list { display:flex; flex-direction:column; gap:6px; }
-.time-rule-row { display:flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:6px 8px; }
+.time-rules-list { display:flex; flex-direction:column; gap:8px; }
+.time-rule-row { display:flex; flex-direction:column; gap:6px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:8px 10px; }
+.time-rule-top { display:flex; align-items:center; gap:7px; }
+.time-rule-bottom { display:flex; align-items:center; gap:7px; padding-left:33px; }
 .time-rule-color-input { width:26px; height:26px; border:none; background:none; padding:0; cursor:pointer; border-radius:4px; flex-shrink:0; }
-.time-rule-label { flex:1; min-width:70px; padding:4px 8px; font-size:12px; }
-.time-rule-hours { width:56px; padding:4px 6px; font-size:12px; text-align:center; }
-.time-rule-sep { font-size:11px; color:var(--text-dim); white-space:nowrap; flex-shrink:0; }
-.time-rule-unlimited { font-size:11px; color:var(--text-dim); flex:1; font-style:italic; }
-.time-rule-select { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:4px 4px; font-size:11px; color:var(--text); cursor:pointer; flex-shrink:0; }
+.time-rule-label { flex:1; min-width:0; padding:5px 8px; font-size:13px; }
+.time-rule-hours { width:60px; padding:5px 8px; font-size:13px; text-align:center; }
+.time-rule-select { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:5px 6px; font-size:12px; color:var(--text); cursor:pointer; flex-shrink:0; }
 
 /* ── Admin / Super Admin ─────────────────────────────────── */
 .admin-page { padding:24px; max-width:920px; }
