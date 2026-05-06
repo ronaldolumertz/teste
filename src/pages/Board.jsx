@@ -115,7 +115,7 @@ export default function Board() {
     const pos = columns.length
     const color = COLORS[pos % COLORS.length]
     const { data, error } = await supabase.from('columns')
-      .insert({ company_id: company.id, title: 'Nova Coluna', color, position: pos, access_all: true })
+      .insert({ company_id: company.id, title: 'Nova Coluna', color, position: pos, access_all: false })
       .select().single()
     if (error) { setBoardError('Erro ao criar coluna: ' + error.message); return }
     if (data) setEditingCol(data)
