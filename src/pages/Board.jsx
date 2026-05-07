@@ -13,40 +13,6 @@ function fmtCurrency(v) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 }
 
-function SectorPanel({ children }) {
-  const wrapperRef = useRef(null)
-  const panRef = useRef(null)
-
-  const handleMouseDown = useCallback((e) => {
-    const el = e.target
-    if (el.closest('.column-card') || el.closest('.column') || el.closest('.add-column-btn')) return
-    e.preventDefault()
-    panRef.current = { startX: e.clientX, scrollLeft: wrapperRef.current.scrollLeft }
-    wrapperRef.current.style.cursor = 'grabbing'
-    wrapperRef.current.style.userSelect = 'none'
-    const onMove = (ev) => {
-      if (!panRef.current) return
-      const dx = ev.clientX - panRef.current.startX
-      wrapperRef.current.scrollLeft = panRef.current.scrollLeft - dx
-    }
-    const onUp = () => {
-      panRef.current = null
-      wrapperRef.current.style.cursor = ''
-      wrapperRef.current.style.userSelect = ''
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }, [])
-
-  return (
-    <div className="board-wrapper sector-board" ref={wrapperRef} onMouseDown={handleMouseDown}>
-      {children}
-    </div>
-  )
-}
-
 export default function Board() {
   const { profile, company, isAdmin } = useAuth()
 
@@ -66,6 +32,30 @@ export default function Board() {
   const [renamingSectorId, setRenamingSectorId]       = useState(null)
   const [renamingSectorTitle, setRenamingSectorTitle] = useState('')
   const [deletingSectorId, setDeletingSectorId]       = useState(null)
+  const boardRef = useRef(null)
+  const panRef   = useRef(null)
+
+  const handleBoardMouseDown = useCallback((e) => {
+    const el = e.target
+    if (el.closest('.column-card') || el.closest('.column') || el.closest('.add-column-btn') || el.closest('.add-sector-btn') || el.closest('.sector-header')) return
+    e.preventDefault()
+    panRef.current = { startX: e.clientX, scrollLeft: boardRef.current.scrollLeft }
+    boardRef.current.style.cursor = 'grabbing'
+    boardRef.current.style.userSelect = 'none'
+    const onMove = (ev) => {
+      if (!panRef.current) return
+      boardRef.current.scrollLeft = panRef.current.scrollLeft - (ev.clientX - panRef.current.startX)
+    }
+    const onUp = () => {
+      panRef.current = null
+      boardRef.current.style.cursor = ''
+      boardRef.current.style.userSelect = ''
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [])
 
   // ── Fetch ──────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
@@ -314,39 +304,36 @@ export default function Board() {
     setPendingMove({ cardId, targetColId, beforeCardId: null })
   }
 
-  // ── Render sector contents ─────────────────────────────────
-  const renderSectorBody = (cols, sectorId) => (
-    <SectorPanel>
-      <div className="board">
-        {cols.map(col => (
-          <KanbanColumn
-            key={col.id}
-            column={col}
-            cards={colCards(col.id)}
-            isAdmin={isAdmin}
-            canEdit={canEditColumn(col.id)}
-            onEditColumn={() => setEditingCol(col)}
-            onRenameColumn={handleRenameColumn}
-            onAddCard={handleAddCard}
-            onEditCard={setEditingCard}
-            draggingCardId={draggingCardId}
-            onDragCardStart={setDraggingCardId}
-            onDragCardEnd={() => setDraggingCardId(null)}
-            onDropCard={handleDropCard}
-            onDropColumn={handleDropColumn}
-            onTouchDragStart={handleTouchDragStart}
-          />
-        ))}
-        {isAdmin && (
-          <button className="add-column-btn" onClick={() => handleAddEtapa(sectorId)}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-            Adicionar etapa
-          </button>
-        )}
-      </div>
-    </SectorPanel>
+  const renderEtapas = (cols, sectorId) => (
+    <>
+      {cols.map(col => (
+        <KanbanColumn
+          key={col.id}
+          column={col}
+          cards={colCards(col.id)}
+          isAdmin={isAdmin}
+          canEdit={canEditColumn(col.id)}
+          onEditColumn={() => setEditingCol(col)}
+          onRenameColumn={handleRenameColumn}
+          onAddCard={handleAddCard}
+          onEditCard={setEditingCard}
+          draggingCardId={draggingCardId}
+          onDragCardStart={setDraggingCardId}
+          onDragCardEnd={() => setDraggingCardId(null)}
+          onDropCard={handleDropCard}
+          onDropColumn={handleDropColumn}
+          onTouchDragStart={handleTouchDragStart}
+        />
+      ))}
+      {isAdmin && (
+        <button className="add-column-btn" onClick={() => handleAddEtapa(sectorId)}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Adicionar etapa
+        </button>
+      )}
+    </>
   )
 
   const noSectorCols = columns
@@ -374,97 +361,95 @@ export default function Board() {
         </div>
       )}
 
-      <div className="board-areas">
-        {sectors
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-          .map(sector => {
-            const sectorCols = columns
-              .filter(c => c.sector_id === sector.id)
-              .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-            return (
-              <div key={sector.id} className="sector">
-                <div className="sector-header">
-                  {renamingSectorId === sector.id ? (
-                    <input
-                      className="sector-title-input"
-                      autoFocus
-                      value={renamingSectorTitle}
-                      onChange={e => setRenamingSectorTitle(e.target.value)}
-                      onBlur={() => handleRenameSector(sector.id)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') handleRenameSector(sector.id)
-                        if (e.key === 'Escape') setRenamingSectorId(null)
-                      }}
-                    />
-                  ) : (
-                    <span
-                      className="sector-title"
-                      onDoubleClick={() => { if (!isAdmin) return; setRenamingSectorId(sector.id); setRenamingSectorTitle(sector.title) }}
-                      title={isAdmin ? 'Duplo clique para renomear' : ''}
-                    >
-                      {sector.title}
-                    </span>
-                  )}
-                  <span className="sector-sep">·</span>
-                  <span className="sector-count">
-                    {sectorCols.length} etapa{sectorCols.length !== 1 ? 's' : ''}
-                  </span>
-                  {isAdmin && (
-                    <div className="sector-actions">
-                      <button className="btn btn-ghost btn-sm" onClick={() => handleAddEtapa(sector.id)}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <path d="M12 5v14M5 12h14"/>
-                        </svg>
-                        Nova etapa
-                      </button>
-                      <button className="btn-icon" title="Renomear" onClick={() => { setRenamingSectorId(sector.id); setRenamingSectorTitle(sector.title) }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                      </button>
-                      <button className="btn-icon danger" title="Excluir setor" onClick={() => setDeletingSectorId(sector.id)}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                        </svg>
-                      </button>
-                    </div>
-                  )}
+      <div className="board-areas" ref={boardRef} onMouseDown={handleBoardMouseDown}>
+        <div className="board-row">
+          {sectors
+            .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+            .map(sector => {
+              const sectorCols = columns
+                .filter(c => c.sector_id === sector.id)
+                .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+              return (
+                <div key={sector.id} className="sector">
+                  <div className="sector-header">
+                    {renamingSectorId === sector.id ? (
+                      <input
+                        className="sector-title-input"
+                        autoFocus
+                        value={renamingSectorTitle}
+                        onChange={e => setRenamingSectorTitle(e.target.value)}
+                        onBlur={() => handleRenameSector(sector.id)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') handleRenameSector(sector.id)
+                          if (e.key === 'Escape') setRenamingSectorId(null)
+                        }}
+                      />
+                    ) : (
+                      <span className="sector-title"
+                        onDoubleClick={() => { if (!isAdmin) return; setRenamingSectorId(sector.id); setRenamingSectorTitle(sector.title) }}
+                        title={isAdmin ? 'Duplo clique para renomear' : ''}>
+                        {sector.title}
+                      </span>
+                    )}
+                    {isAdmin && (
+                      <div className="sector-actions">
+                        <button className="btn btn-ghost btn-sm" onClick={() => handleAddEtapa(sector.id)}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M12 5v14M5 12h14"/>
+                          </svg>
+                          Nova etapa
+                        </button>
+                        <button className="btn-icon" title="Renomear" onClick={() => { setRenamingSectorId(sector.id); setRenamingSectorTitle(sector.title) }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                        </button>
+                        <button className="btn-icon danger" title="Excluir setor" onClick={() => setDeletingSectorId(sector.id)}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="sector-columns">
+                    {renderEtapas(sectorCols, sector.id)}
+                  </div>
                 </div>
-                {renderSectorBody(sectorCols, sector.id)}
+              )
+            })}
+
+          {noSectorCols.length > 0 && (
+            <div className="sector sector-unsorted">
+              <div className="sector-header">
+                <span className="sector-title">Sem Setor</span>
               </div>
-            )
-          })}
-
-        {noSectorCols.length > 0 && (
-          <div className="sector sector-unsorted">
-            <div className="sector-header">
-              <span className="sector-title">Sem Setor</span>
-              <span className="sector-sep">·</span>
-              <span className="sector-count">{noSectorCols.length} etapa{noSectorCols.length !== 1 ? 's' : ''}</span>
+              <div className="sector-columns">
+                {renderEtapas(noSectorCols, null)}
+              </div>
             </div>
-            {renderSectorBody(noSectorCols, null)}
-          </div>
-        )}
+          )}
 
-        {sectors.length === 0 && noSectorCols.length === 0 && isAdmin && (
-          <div className="sector-empty-state">
-            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" opacity=".25">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <path d="M3 9h18M9 21V9"/>
-            </svg>
-            <p>Crie o primeiro setor para organizar as etapas do seu pipeline.</p>
-          </div>
-        )}
+          {sectors.length === 0 && noSectorCols.length === 0 && isAdmin && (
+            <div className="sector-empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" opacity=".25">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M9 21V9"/>
+              </svg>
+              <p>Crie o primeiro setor para organizar as etapas do seu pipeline.</p>
+            </div>
+          )}
 
-        {isAdmin && (
-          <button className="add-sector-btn" onClick={handleAddSector}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-            Adicionar Setor
-          </button>
-        )}
+          {isAdmin && (
+            <button className="add-sector-btn" onClick={handleAddSector}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              Novo Setor
+            </button>
+          )}
+        </div>
       </div>
 
       {editingCard && (
