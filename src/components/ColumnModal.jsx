@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
-export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose }) {
+export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDelete, onClose }) {
   const [title, setTitle]         = useState(column.title)
   const [color, setColor]         = useState(column.color)
   const [accessAll, setAccessAll] = useState(column.access_all ?? false)
@@ -16,6 +16,7 @@ export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose 
     }))
   )
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [sectorId, setSectorId] = useState(column.sector_id ?? null)
   const inputRef = useRef(null)
 
   useEffect(() => { inputRef.current?.focus(); inputRef.current?.select() }, [])
@@ -24,14 +25,14 @@ export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose 
   const updateRule = (id, k, v) => setRules(r => r.map(x => x.id === id ? { ...x, [k]: v } : x))
   const removeRule = (id) => setRules(r => r.filter(x => x.id !== id))
 
-  const save = () => onSave({ title: title.trim() || column.title, color, access_all: accessAll, time_rules: rules })
+  const save = () => onSave({ title: title.trim() || column.title, color, access_all: accessAll, time_rules: rules, sector_id: sectorId })
 
   return createPortal(
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal confirm-modal" role="dialog">
         <div className="modal-header">
           <div className="column-dot" style={{ background: color, width: 14, height: 14 }} />
-          <span className="modal-title">Editar Coluna</span>
+          <span className="modal-title">Editar Etapa</span>
           <button className="btn-icon" onClick={onClose}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M18 6 6 18M6 6l12 12"/>
@@ -41,12 +42,22 @@ export default function ColumnModal({ column, COLORS, onSave, onDelete, onClose 
 
         <div className="modal-body">
           <div className="field">
-            <label>Nome da coluna</label>
+            <label>Nome da etapa</label>
             <input ref={inputRef} className="field-input" value={title}
               onChange={e => setTitle(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') onClose() }}
-              placeholder="Nome da coluna" />
+              placeholder="Nome da etapa" />
           </div>
+
+          {sectors.length > 0 && (
+            <div className="field">
+              <label>Setor</label>
+              <select className="field-input" value={sectorId || ''} onChange={e => setSectorId(e.target.value || null)}>
+                <option value="">Sem Setor</option>
+                {sectors.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+              </select>
+            </div>
+          )}
 
           <div className="field">
             <label>Cor</label>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -13,32 +13,70 @@ function fmtCurrency(v) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 }
 
+function SectorPanel({ children }) {
+  const wrapperRef = useRef(null)
+  const panRef = useRef(null)
+
+  const handleMouseDown = useCallback((e) => {
+    const el = e.target
+    if (el.closest('.column-card') || el.closest('.column') || el.closest('.add-column-btn')) return
+    e.preventDefault()
+    panRef.current = { startX: e.clientX, scrollLeft: wrapperRef.current.scrollLeft }
+    wrapperRef.current.style.cursor = 'grabbing'
+    wrapperRef.current.style.userSelect = 'none'
+    const onMove = (ev) => {
+      if (!panRef.current) return
+      const dx = ev.clientX - panRef.current.startX
+      wrapperRef.current.scrollLeft = panRef.current.scrollLeft - dx
+    }
+    const onUp = () => {
+      panRef.current = null
+      wrapperRef.current.style.cursor = ''
+      wrapperRef.current.style.userSelect = ''
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [])
+
+  return (
+    <div className="board-wrapper sector-board" ref={wrapperRef} onMouseDown={handleMouseDown}>
+      {children}
+    </div>
+  )
+}
+
 export default function Board() {
   const { profile, company, isAdmin } = useAuth()
 
-  const [columns, setColumns]         = useState([])
-  const [cards, setCards]             = useState([])
-  const cardsRef                      = useRef([])
-  const [myPerms, setMyPerms]         = useState([]) // column_permissions for current user
-  const [search, setSearch]           = useState('')
-  const [editingCard, setEditingCard] = useState(null)
-  const [editingCol, setEditingCol]   = useState(null)
+  const [sectors, setSectors]           = useState([])
+  const [columns, setColumns]           = useState([])
+  const [cards, setCards]               = useState([])
+  const cardsRef                        = useRef([])
+  const [myPerms, setMyPerms]           = useState([])
+  const [search, setSearch]             = useState('')
+  const [editingCard, setEditingCard]   = useState(null)
+  const [editingCol, setEditingCol]     = useState(null)
   const [draggingCardId, setDraggingCardId] = useState(null)
-  const [pendingMove, setPendingMove] = useState(null) // { cardId, targetColId, beforeCardId }
-  const touchRef = useRef(null)
-  const [loading, setLoading]         = useState(true)
-  const [boardError, setBoardError]   = useState('')
-  const boardWrapperRef = useRef(null)
-  const panRef = useRef(null)
+  const [pendingMove, setPendingMove]   = useState(null)
+  const touchRef                        = useRef(null)
+  const [loading, setLoading]           = useState(true)
+  const [boardError, setBoardError]     = useState('')
+  const [renamingSectorId, setRenamingSectorId]       = useState(null)
+  const [renamingSectorTitle, setRenamingSectorTitle] = useState('')
+  const [deletingSectorId, setDeletingSectorId]       = useState(null)
 
   // ── Fetch ──────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
-    const [{ data: cols, error: colErr }, { data: cds }, { data: perms }] = await Promise.all([
+    const [{ data: sects }, { data: cols, error: colErr }, { data: cds }, { data: perms }] = await Promise.all([
+      supabase.from('sectors').select('*').eq('company_id', company.id).order('position'),
       supabase.from('columns').select('*').eq('company_id', company.id).order('position'),
       supabase.from('cards').select('*').eq('company_id', company.id).order('position'),
       supabase.from('column_permissions').select('*').eq('profile_id', profile.id),
     ])
     if (colErr) setBoardError(colErr.message)
+    setSectors(sects || [])
     setColumns(cols || [])
     const cardList = cds || []
     setCards(cardList)
@@ -55,6 +93,8 @@ export default function Board() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cards',
            filter: `company_id=eq.${company.id}` }, fetchAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'columns',
+           filter: `company_id=eq.${company.id}` }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sectors',
            filter: `company_id=eq.${company.id}` }, fetchAll)
       .subscribe()
     return () => supabase.removeChannel(channel)
@@ -89,8 +129,8 @@ export default function Board() {
 
   // ── Card CRUD ──────────────────────────────────────────────
   const handleAddCard = async (columnId) => {
-    const colCards = cardsRef.current.filter(c => c.column_id === columnId)
-    const maxPos = colCards.length > 0 ? Math.max(...colCards.map(c => c.position ?? 0)) : 0
+    const cc = cardsRef.current.filter(c => c.column_id === columnId)
+    const maxPos = cc.length > 0 ? Math.max(...cc.map(c => c.position ?? 0)) : 0
     const { data } = await supabase.from('cards')
       .insert({ company_id: company.id, column_id: columnId, name: 'Novo Contato', position: maxPos + 100 })
       .select().single()
@@ -113,20 +153,50 @@ export default function Board() {
     fetchAll()
   }
 
-  // ── Column CRUD ────────────────────────────────────────────
-  const handleAddColumn = async () => {
-    const pos = columns.length
-    const color = COLORS[pos % COLORS.length]
-    const { data, error } = await supabase.from('columns')
-      .insert({ company_id: company.id, title: 'Nova Coluna', color, position: pos, access_all: false })
+  // ── Sector CRUD ────────────────────────────────────────────
+  const handleAddSector = async () => {
+    const pos = sectors.length
+    const { data, error } = await supabase.from('sectors')
+      .insert({ company_id: company.id, title: 'Novo Setor', position: pos })
       .select().single()
-    if (error) { setBoardError('Erro ao criar coluna: ' + error.message); return }
+    if (error) { setBoardError(error.message); return }
+    if (data) {
+      setSectors(prev => [...prev, data])
+      setRenamingSectorId(data.id)
+      setRenamingSectorTitle('Novo Setor')
+    }
+  }
+
+  const handleRenameSector = async (id) => {
+    const title = renamingSectorTitle.trim() || 'Setor'
+    await supabase.from('sectors').update({ title }).eq('id', id)
+    setSectors(prev => prev.map(s => s.id === id ? { ...s, title } : s))
+    setRenamingSectorId(null)
+  }
+
+  const handleDeleteSector = async (id) => {
+    setDeletingSectorId(null)
+    await supabase.from('columns').update({ sector_id: null }).eq('sector_id', id)
+    await supabase.from('sectors').delete().eq('id', id)
+    fetchAll()
+  }
+
+  // ── Etapa CRUD ─────────────────────────────────────────────
+  const handleAddEtapa = async (sectorId) => {
+    const scopedCols = columns.filter(c => c.sector_id === sectorId)
+    const pos = scopedCols.length
+    const color = COLORS[columns.length % COLORS.length]
+    const { data, error } = await supabase.from('columns')
+      .insert({ company_id: company.id, sector_id: sectorId, title: 'Nova Etapa', color, position: pos, access_all: false })
+      .select().single()
+    if (error) { setBoardError('Erro ao criar etapa: ' + error.message); return }
     if (data) setEditingCol(data)
   }
 
   const handleSaveColumn = async (form) => {
     await supabase.from('columns').update({
-      title: form.title, color: form.color, access_all: form.access_all, time_rules: form.time_rules,
+      title: form.title, color: form.color, access_all: form.access_all,
+      time_rules: form.time_rules, sector_id: form.sector_id ?? null,
     }).eq('id', editingCol.id)
     setEditingCol(null)
     fetchAll()
@@ -141,6 +211,25 @@ export default function Board() {
   const handleRenameColumn = async (id, title) => {
     await supabase.from('columns').update({ title }).eq('id', id)
     fetchAll()
+  }
+
+  // ── Drag & drop ────────────────────────────────────────────
+  const handleDropColumn = async (dragId, overId) => {
+    const dragCol = columns.find(c => c.id === dragId)
+    const overCol = columns.find(c => c.id === overId)
+    if (!dragCol || !overCol || dragCol.sector_id !== overCol.sector_id) return
+    const sectorId = dragCol.sector_id
+    const sectorCols = columns
+      .filter(c => c.sector_id === sectorId)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    const from = sectorCols.findIndex(c => c.id === dragId)
+    const to   = sectorCols.findIndex(c => c.id === overId)
+    if (from < 0 || to < 0 || from === to) return
+    const reordered = [...sectorCols]
+    const [moved] = reordered.splice(from, 1)
+    reordered.splice(to, 0, moved)
+    setColumns(prev => [...prev.filter(c => c.sector_id !== sectorId), ...reordered])
+    await Promise.all(reordered.map((c, i) => supabase.from('columns').update({ position: i }).eq('id', c.id)))
   }
 
   // ── Touch drag & drop (mobile) ────────────────────────────
@@ -169,10 +258,8 @@ export default function Board() {
       s.ghost.style.visibility = 'hidden'
       const under = document.elementFromPoint(t.clientX, t.clientY)
       s.ghost.style.visibility = ''
-
       const colEl = under?.closest('[data-column-id]')
       const colId = colEl?.dataset.columnId || null
-      // Only highlight if dropping into a different column
       const validTarget = colId && colId !== s.sourceColId
       if (colId !== s.lastColId) {
         if (s.lastColId) document.querySelector(`[data-column-id="${s.lastColId}"]`)?.classList.remove('drag-over')
@@ -181,15 +268,11 @@ export default function Board() {
       }
     }
 
-    const onEnd = (e) => {
+    const onEnd = () => {
       const s = touchRef.current; if (!s) return
       if (s.lastColId) document.querySelector(`[data-column-id="${s.lastColId}"]`)?.classList.remove('drag-over')
       s.ghost.remove()
-
-      // Only drop if target column is different from source
-      if (s.lastColId && s.lastColId !== s.sourceColId) {
-        handleDropCard(s.cardId, s.lastColId)  // always appends to bottom
-      }
+      if (s.lastColId && s.lastColId !== s.sourceColId) handleDropCard(s.cardId, s.lastColId)
       touchRef.current = null
       setDraggingCardId(null)
       document.removeEventListener('touchmove', onMove)
@@ -200,28 +283,21 @@ export default function Board() {
     document.addEventListener('touchend', onEnd)
   }, []) // eslint-disable-line
 
-  // ── Drag & drop ────────────────────────────────────────────
   const doMoveCard = async (cardId, targetColId, beforeCardId = null) => {
-    const colCards = cardsRef.current
+    const cc = cardsRef.current
       .filter(c => c.column_id === targetColId && c.id !== cardId)
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-
     let newPos
-    if (colCards.length === 0) {
+    if (cc.length === 0) {
       newPos = 0
     } else if (beforeCardId === null) {
-      newPos = (colCards[colCards.length - 1].position ?? 0) + 100
+      newPos = (cc[cc.length - 1].position ?? 0) + 100
     } else {
-      const beforeIdx = colCards.findIndex(c => c.id === beforeCardId)
-      if (beforeIdx === -1) {
-        newPos = (colCards[colCards.length - 1].position ?? 0) + 100
-      } else if (beforeIdx === 0) {
-        newPos = (colCards[0].position ?? 0) - 100
-      } else {
-        newPos = ((colCards[beforeIdx - 1].position ?? 0) + (colCards[beforeIdx].position ?? 0)) / 2
-      }
+      const bi = cc.findIndex(c => c.id === beforeCardId)
+      if (bi === -1) newPos = (cc[cc.length - 1].position ?? 0) + 100
+      else if (bi === 0) newPos = (cc[0].position ?? 0) - 100
+      else newPos = ((cc[bi - 1].position ?? 0) + (cc[bi].position ?? 0)) / 2
     }
-
     setCards(prev => {
       const next = prev
         .map(c => c.id === cardId ? { ...c, column_id: targetColId, position: newPos } : c)
@@ -234,48 +310,51 @@ export default function Board() {
 
   const handleDropCard = (cardId, targetColId) => {
     const card = cardsRef.current.find(c => c.id === cardId)
-    if (!card || card.column_id === targetColId) return  // block same-column drag
-    setPendingMove({ cardId, targetColId, beforeCardId: null })  // always append to bottom
+    if (!card || card.column_id === targetColId) return
+    setPendingMove({ cardId, targetColId, beforeCardId: null })
   }
 
-  const handleDropColumn = async (dragId, overId) => {
-    const cols = [...columns]
-    const from = cols.findIndex(c => c.id === dragId)
-    const to   = cols.findIndex(c => c.id === overId)
-    if (from < 0 || to < 0 || from === to) return
-    const [moved] = cols.splice(from, 1)
-    cols.splice(to, 0, moved)
-    setColumns(cols)
-    await Promise.all(cols.map((c, i) => supabase.from('columns').update({ position: i }).eq('id', c.id)))
-  }
+  // ── Render sector contents ─────────────────────────────────
+  const renderSectorBody = (cols, sectorId) => (
+    <SectorPanel>
+      <div className="board">
+        {cols.map(col => (
+          <KanbanColumn
+            key={col.id}
+            column={col}
+            cards={colCards(col.id)}
+            isAdmin={isAdmin}
+            canEdit={canEditColumn(col.id)}
+            onEditColumn={() => setEditingCol(col)}
+            onRenameColumn={handleRenameColumn}
+            onAddCard={handleAddCard}
+            onEditCard={setEditingCard}
+            draggingCardId={draggingCardId}
+            onDragCardStart={setDraggingCardId}
+            onDragCardEnd={() => setDraggingCardId(null)}
+            onDropCard={handleDropCard}
+            onDropColumn={handleDropColumn}
+            onTouchDragStart={handleTouchDragStart}
+          />
+        ))}
+        {isAdmin && (
+          <button className="add-column-btn" onClick={() => handleAddEtapa(sectorId)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Adicionar etapa
+          </button>
+        )}
+      </div>
+    </SectorPanel>
+  )
 
-  // ── Board pan (click-drag outside cards) ──────────────────
-  const handleBoardMouseDown = useCallback((e) => {
-    const el = e.target
-    if (el.closest('.column-card') || el.closest('.column') || el.closest('.add-column-btn')) return
-    e.preventDefault()
-    panRef.current = { startX: e.clientX, scrollLeft: boardWrapperRef.current.scrollLeft }
-    boardWrapperRef.current.style.cursor = 'grabbing'
-    boardWrapperRef.current.style.userSelect = 'none'
-
-    const onMove = (ev) => {
-      if (!panRef.current) return
-      const dx = ev.clientX - panRef.current.startX
-      boardWrapperRef.current.scrollLeft = panRef.current.scrollLeft - dx
-    }
-    const onUp = () => {
-      panRef.current = null
-      boardWrapperRef.current.style.cursor = ''
-      boardWrapperRef.current.style.userSelect = ''
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }, [])
+  const noSectorCols = columns
+    .filter(c => !c.sector_id)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
 
   if (loading) return (
-    <Layout stats={stats} search={search} onSearch={setSearch} onAddColumn={isAdmin ? handleAddColumn : undefined}>
+    <Layout stats={stats} search={search} onSearch={setSearch}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         <div className="spinner" />
       </div>
@@ -283,12 +362,7 @@ export default function Board() {
   )
 
   return (
-    <Layout
-      stats={stats}
-      search={search}
-      onSearch={setSearch}
-      onAddColumn={isAdmin ? handleAddColumn : undefined}
-    >
+    <Layout stats={stats} search={search} onSearch={setSearch}>
       {boardError && (
         <div style={{
           background:'rgba(239,68,68,.1)', border:'1px solid rgba(239,68,68,.3)',
@@ -299,37 +373,96 @@ export default function Board() {
           <button style={{ color:'inherit', opacity:.7 }} onClick={() => setBoardError('')}>×</button>
         </div>
       )}
-      <div className="board-wrapper" ref={boardWrapperRef} onMouseDown={handleBoardMouseDown}>
-        <div className="board">
-          {columns.map(col => (
-            <KanbanColumn
-              key={col.id}
-              column={col}
-              cards={colCards(col.id)}
-              isAdmin={isAdmin}
-              canEdit={canEditColumn(col.id)}
-              onEditColumn={() => setEditingCol(col)}
-              onRenameColumn={handleRenameColumn}
-              onAddCard={handleAddCard}
-              onEditCard={setEditingCard}
-              draggingCardId={draggingCardId}
-              onDragCardStart={setDraggingCardId}
-              onDragCardEnd={() => setDraggingCardId(null)}
-              onDropCard={handleDropCard}
-              onDropColumn={handleDropColumn}
-              onTouchDragStart={handleTouchDragStart}
-            />
-          ))}
 
-          {isAdmin && (
-            <button className="add-column-btn" onClick={handleAddColumn}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              Adicionar coluna
-            </button>
-          )}
-        </div>
+      <div className="board-areas">
+        {sectors
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+          .map(sector => {
+            const sectorCols = columns
+              .filter(c => c.sector_id === sector.id)
+              .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+            return (
+              <div key={sector.id} className="sector">
+                <div className="sector-header">
+                  {renamingSectorId === sector.id ? (
+                    <input
+                      className="sector-title-input"
+                      autoFocus
+                      value={renamingSectorTitle}
+                      onChange={e => setRenamingSectorTitle(e.target.value)}
+                      onBlur={() => handleRenameSector(sector.id)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleRenameSector(sector.id)
+                        if (e.key === 'Escape') setRenamingSectorId(null)
+                      }}
+                    />
+                  ) : (
+                    <span
+                      className="sector-title"
+                      onDoubleClick={() => { if (!isAdmin) return; setRenamingSectorId(sector.id); setRenamingSectorTitle(sector.title) }}
+                      title={isAdmin ? 'Duplo clique para renomear' : ''}
+                    >
+                      {sector.title}
+                    </span>
+                  )}
+                  <span className="sector-count">
+                    {sectorCols.length} etapa{sectorCols.length !== 1 ? 's' : ''}
+                  </span>
+                  {isAdmin && (
+                    <div className="sector-actions">
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleAddEtapa(sector.id)}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                        Nova etapa
+                      </button>
+                      <button className="btn-icon" title="Renomear" onClick={() => { setRenamingSectorId(sector.id); setRenamingSectorTitle(sector.title) }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                      </button>
+                      <button className="btn-icon danger" title="Excluir setor" onClick={() => setDeletingSectorId(sector.id)}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {renderSectorBody(sectorCols, sector.id)}
+              </div>
+            )
+          })}
+
+        {noSectorCols.length > 0 && (
+          <div className="sector sector-unsorted">
+            <div className="sector-header">
+              <span className="sector-title">Sem Setor</span>
+              <span className="sector-count">{noSectorCols.length} etapa{noSectorCols.length !== 1 ? 's' : ''}</span>
+            </div>
+            {renderSectorBody(noSectorCols, null)}
+          </div>
+        )}
+
+        {sectors.length === 0 && noSectorCols.length === 0 && isAdmin && (
+          <div className="sector-empty-state">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" opacity=".25">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M3 9h18M9 21V9"/>
+            </svg>
+            <p>Crie o primeiro setor para organizar as etapas do seu pipeline.</p>
+          </div>
+        )}
+
+        {isAdmin && (
+          <button className="add-sector-btn" onClick={handleAddSector}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Adicionar Setor
+          </button>
+        )}
       </div>
 
       {editingCard && (
@@ -346,6 +479,7 @@ export default function Board() {
       {editingCol && (
         <ColumnModal
           column={editingCol}
+          sectors={sectors}
           COLORS={COLORS}
           companyId={company.id}
           onSave={handleSaveColumn}
@@ -401,6 +535,32 @@ export default function Board() {
           document.body
         )
       })()}
+
+      {deletingSectorId && createPortal(
+        <div className="modal-overlay" onClick={() => setDeletingSectorId(null)}>
+          <div className="modal confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="modal-title">Excluir Setor</span>
+              <button className="btn-icon" onClick={() => setDeletingSectorId(null)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18 6 6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ fontSize: 14, color: 'var(--text)' }}>
+                Excluir este setor? As etapas serão movidas para <strong>"Sem Setor"</strong> e os contatos serão preservados.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <div className="spacer" />
+              <button className="btn btn-ghost" onClick={() => setDeletingSectorId(null)}>Cancelar</button>
+              <button className="btn btn-danger" onClick={() => handleDeleteSector(deletingSectorId)}>Excluir Setor</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </Layout>
   )
 }
