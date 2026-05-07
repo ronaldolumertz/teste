@@ -405,6 +405,7 @@ export default function Board() {
                       {sector.title}
                     </span>
                   )}
+                  <span className="sector-sep">·</span>
                   <span className="sector-count">
                     {sectorCols.length} etapa{sectorCols.length !== 1 ? 's' : ''}
                   </span>
@@ -439,6 +440,7 @@ export default function Board() {
           <div className="sector sector-unsorted">
             <div className="sector-header">
               <span className="sector-title">Sem Setor</span>
+              <span className="sector-sep">·</span>
               <span className="sector-count">{noSectorCols.length} etapa{noSectorCols.length !== 1 ? 's' : ''}</span>
             </div>
             {renderSectorBody(noSectorCols, null)}
