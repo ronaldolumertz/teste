@@ -51,6 +51,7 @@ export default function CardModal({ card, columns, canEdit, onSave, onDelete, on
   useEffect(() => { nameRef.current?.focus(); nameRef.current?.select() }, [])
 
   useEffect(() => {
+    if (!card.id) return
     Promise.all([
       supabase.from('products').select('*').eq('active', true).order('name'),
       supabase.from('card_products').select('*').eq('card_id', card.id).order('created_at'),
@@ -229,8 +230,7 @@ export default function CardModal({ card, columns, canEdit, onSave, onDelete, on
               placeholder="Observações, próximos passos…" rows={3} readOnly={!canEdit} />
           </div>
 
-          {/* ── Produtos ── */}
-          <div className="cp-section">
+          {card.id && <div className="cp-section">
             <div className="cp-section-header">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -457,11 +457,11 @@ export default function CardModal({ card, columns, canEdit, onSave, onDelete, on
                 </div>
               </div>
             )}
-          </div>
+          </div>}
         </div>
 
         <div className="modal-footer">
-          {canEdit && (
+          {canEdit && card.id && (
             <button className="btn btn-danger" onClick={() => onDelete(card.id)}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>

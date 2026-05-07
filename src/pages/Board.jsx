@@ -119,26 +119,53 @@ export default function Board() {
   }, [cards, search])
 
   // ── Card CRUD ──────────────────────────────────────────────
-  const handleAddCard = async (columnId) => {
+  const handleAddCard = (columnId) => {
     const cc = cardsRef.current.filter(c => c.column_id === columnId)
     const maxPos = cc.length > 0 ? Math.max(...cc.map(c => c.position ?? 0)) : 0
-    const { data } = await supabase.from('cards')
-      .insert({ company_id: company.id, column_id: columnId, name: 'Novo Contato', position: maxPos + 100 })
-      .select().single()
-    if (data) setEditingCard(data)
+    setEditingCard({
+      _isNew: true,
+      company_id: company.id,
+      column_id: columnId,
+      name: 'Novo Contato',
+      position: maxPos + 100,
+      tags: [],
+      priority: 'medium',
+      notes: '',
+      email: '',
+      phone: '',
+      company_name: '',
+      value: 0,
+    })
   }
 
   const handleSaveCard = async (form) => {
-    await supabase.from('cards').update({
-      name: form.name, company_name: form.company_name, email: form.email,
-      phone: form.phone, value: form.value, priority: form.priority,
-      tags: form.tags, notes: form.notes, column_id: form.column_id,
-    }).eq('id', form.id)
+    if (!form.id) {
+      await supabase.from('cards').insert({
+        company_id: company.id,
+        column_id: form.column_id,
+        name: form.name,
+        company_name: form.company_name,
+        email: form.email,
+        phone: form.phone,
+        value: form.value,
+        priority: form.priority,
+        tags: form.tags,
+        notes: form.notes,
+        position: form.position,
+      })
+    } else {
+      await supabase.from('cards').update({
+        name: form.name, company_name: form.company_name, email: form.email,
+        phone: form.phone, value: form.value, priority: form.priority,
+        tags: form.tags, notes: form.notes, column_id: form.column_id,
+      }).eq('id', form.id)
+    }
     setEditingCard(null)
     fetchAll()
   }
 
   const handleDeleteCard = async (id) => {
+    if (!id) { setEditingCard(null); return }
     await supabase.from('cards').delete().eq('id', id)
     setEditingCard(null)
     fetchAll()
@@ -173,27 +200,44 @@ export default function Board() {
   }
 
   // ── Etapa CRUD ─────────────────────────────────────────────
-  const handleAddEtapa = async (sectorId) => {
-    const scopedCols = columns.filter(c => c.sector_id === sectorId)
-    const pos = scopedCols.length
+  const handleAddEtapa = (sectorId) => {
     const color = COLORS[columns.length % COLORS.length]
-    const { data, error } = await supabase.from('columns')
-      .insert({ company_id: company.id, sector_id: sectorId, title: 'Nova Etapa', color, position: pos, access_all: false })
-      .select().single()
-    if (error) { setBoardError('Erro ao criar etapa: ' + error.message); return }
-    if (data) setEditingCol(data)
+    setEditingCol({
+      _isNew: true,
+      company_id: company.id,
+      sector_id: sectorId,
+      title: 'Nova Etapa',
+      color,
+      access_all: false,
+      time_rules: [],
+    })
   }
 
   const handleSaveColumn = async (form) => {
-    await supabase.from('columns').update({
-      title: form.title, color: form.color, access_all: form.access_all,
-      time_rules: form.time_rules, sector_id: form.sector_id ?? null,
-    }).eq('id', editingCol.id)
+    if (!editingCol?.id) {
+      const scopedCols = columns.filter(c => c.sector_id === (form.sector_id ?? null))
+      const { error } = await supabase.from('columns').insert({
+        company_id: company.id,
+        sector_id: form.sector_id ?? null,
+        title: form.title,
+        color: form.color,
+        access_all: form.access_all,
+        time_rules: form.time_rules,
+        position: scopedCols.length,
+      })
+      if (error) { setBoardError('Erro ao criar etapa: ' + error.message); return }
+    } else {
+      await supabase.from('columns').update({
+        title: form.title, color: form.color, access_all: form.access_all,
+        time_rules: form.time_rules, sector_id: form.sector_id ?? null,
+      }).eq('id', editingCol.id)
+    }
     setEditingCol(null)
     fetchAll()
   }
 
   const handleDeleteColumn = async (id) => {
+    if (!id) { setEditingCol(null); return }
     await supabase.from('columns').delete().eq('id', id)
     setEditingCol(null)
     fetchAll()

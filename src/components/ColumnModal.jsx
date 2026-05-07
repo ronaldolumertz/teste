@@ -165,12 +165,14 @@ export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDe
           </div>
         ) : (
           <div className="modal-footer">
-            <button className="btn btn-danger" onClick={() => setConfirmDelete(true)}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-              </svg>
-              Excluir
-            </button>
+            {column.id && (
+              <button className="btn btn-danger" onClick={() => setConfirmDelete(true)}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                </svg>
+                Excluir
+              </button>
+            )}
             <div className="spacer" />
             <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
             <button className="btn btn-primary" onClick={save}>Salvar</button>
