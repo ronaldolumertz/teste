@@ -25,7 +25,8 @@ export default function Board() {
   const [editingCard, setEditingCard]   = useState(null)
   const [editingCol, setEditingCol]     = useState(null)
   const [draggingCardId, setDraggingCardId] = useState(null)
-  const [pendingMove, setPendingMove]   = useState(null)
+  const [pendingMove, setPendingMove]       = useState(null)
+  const [pendingColMove, setPendingColMove] = useState(null) // { dragId, overId }
   const touchRef                        = useRef(null)
   const [loading, setLoading]           = useState(true)
   const [boardError, setBoardError]     = useState('')
@@ -204,10 +205,16 @@ export default function Board() {
   }
 
   // ── Drag & drop ────────────────────────────────────────────
-  const handleDropColumn = async (dragId, overId) => {
+  const handleDropColumn = (dragId, overId) => {
     const dragCol = columns.find(c => c.id === dragId)
     const overCol = columns.find(c => c.id === overId)
     if (!dragCol || !overCol || dragCol.sector_id !== overCol.sector_id) return
+    setPendingColMove({ dragId, overId })
+  }
+
+  const doMoveColumn = async (dragId, overId) => {
+    const dragCol = columns.find(c => c.id === dragId)
+    if (!dragCol) return
     const sectorId = dragCol.sector_id
     const sectorCols = columns
       .filter(c => c.sector_id === sectorId)
@@ -325,14 +332,6 @@ export default function Board() {
           onTouchDragStart={handleTouchDragStart}
         />
       ))}
-      {isAdmin && (
-        <button className="add-column-btn" onClick={() => handleAddEtapa(sectorId)}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Adicionar etapa
-        </button>
-      )}
     </>
   )
 
@@ -516,6 +515,53 @@ export default function Board() {
                   setPendingMove(null)
                   doMoveCard(cardId, targetColId, beforeCardId)
                 }}>Mover</button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      })()}
+
+      {pendingColMove && (() => {
+        const dragCol = columns.find(c => c.id === pendingColMove.dragId)
+        const overCol = columns.find(c => c.id === pendingColMove.overId)
+        return createPortal(
+          <div className="modal-overlay" onClick={() => setPendingColMove(null)}>
+            <div className="modal confirm-modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <span className="modal-title">Reordenar etapa</span>
+                <button className="btn-icon" onClick={() => setPendingColMove(null)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+              <div className="modal-body" style={{ gap: 8 }}>
+                <p style={{ fontSize: 14, color: 'var(--text)' }}>
+                  Mover a etapa <strong>"{dragCol?.title}"</strong> para antes de <strong>"{overCol?.title}"</strong>?
+                </p>
+                <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:13 }}>
+                  <span style={{ display:'flex', alignItems:'center', gap:5 }}>
+                    <span style={{ width:9, height:9, borderRadius:'50%', background:dragCol?.color, display:'inline-block', flexShrink:0 }}/>
+                    <strong>{dragCol?.title}</strong>
+                  </span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                  <span style={{ display:'flex', alignItems:'center', gap:5 }}>
+                    <span style={{ width:9, height:9, borderRadius:'50%', background:overCol?.color, display:'inline-block', flexShrink:0 }}/>
+                    <strong>{overCol?.title}</strong>
+                  </span>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <div className="spacer"/>
+                <button className="btn btn-ghost" onClick={() => setPendingColMove(null)}>Cancelar</button>
+                <button className="btn btn-primary" onClick={() => {
+                  const { dragId, overId } = pendingColMove
+                  setPendingColMove(null)
+                  doMoveColumn(dragId, overId)
+                }}>Confirmar</button>
               </div>
             </div>
           </div>,
