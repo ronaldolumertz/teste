@@ -429,3 +429,20 @@ select.field-input { cursor:pointer; appearance:none; background-image:url("data
 .logo-upload-actions { display:flex; flex-direction:column; gap:6px; }
 .logo-upload-actions .btn { padding:5px 12px; }
 
+
+/* ── Sectors ─────────────────────────────────────────────── */
+.board-areas { flex:1; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; }
+.sector { border-bottom:1px solid var(--border); }
+.sector-header { display:flex; align-items:center; gap:10px; padding:10px 16px; background:var(--surface2); border-bottom:1px solid var(--border); min-height:46px; position:sticky; left:0; }
+.sector-title { font-size:14px; font-weight:700; color:var(--text); letter-spacing:.01em; }
+.sector-title-input { font-size:14px; font-weight:700; color:var(--text); background:var(--input-bg,var(--surface)); border:1px solid var(--accent); border-radius:4px; padding:2px 8px; outline:none; min-width:140px; }
+.sector-count { font-size:11px; color:var(--text-dim); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1px 8px; flex-shrink:0; }
+.sector-actions { margin-left:auto; display:flex; align-items:center; gap:4px; }
+.sector-unsorted .sector-header { opacity:.6; }
+.sector-empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:60px 20px; color:var(--text-dim); font-size:13px; text-align:center; flex:1; }
+.add-sector-btn { display:flex; align-items:center; gap:8px; margin:14px 16px; padding:10px 16px; border:2px dashed var(--border); border-radius:var(--radius-lg); color:var(--text-dim); font-size:13px; font-weight:500; cursor:pointer; background:transparent; transition:border-color var(--transition),color var(--transition); flex-shrink:0; }
+.add-sector-btn:hover { border-color:var(--accent); color:var(--accent); }
+.sector-board { overflow-x:auto; overflow-y:hidden; padding:14px 16px 16px; flex:none; }
+.sector-board .board { height:auto; }
+.sector-board .column { max-height:calc(100vh - 240px); }
+.btn-sm { padding:4px 10px; font-size:12px; }
