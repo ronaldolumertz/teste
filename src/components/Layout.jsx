@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import UserDrawer from './UserDrawer'
 import ProfileModal from './ProfileModal'
+import ItemFieldsModal from './ItemFieldsModal'
 import { subscribePush, unsubscribePush, getNotificationPermission } from '../lib/push'
 
 function useTheme(userId) {
@@ -40,9 +41,10 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const location = useLocation()
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme(profile?.id)
-  const [drawerOpen, setDrawerOpen]   = useState(false)
-  const [profileOpen, setProfileOpen] = useState(false)
-  const [prodOpen, setProdOpen]       = useState(false)
+  const [drawerOpen, setDrawerOpen]         = useState(false)
+  const [profileOpen, setProfileOpen]       = useState(false)
+  const [itemFieldsOpen, setItemFieldsOpen] = useState(false)
+  const [prodOpen, setProdOpen]             = useState(false)
   const prodRef = useRef(null)
   const [installPrompt, setInstallPrompt] = useState(() => window.__pwaPrompt ?? null)
   const [installDismissed, setInstallDismissed] = useState(
@@ -243,11 +245,20 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
           onToggleNotifications={handleToggleNotifications}
           onSignOut={handleSignOut}
           onEditProfile={handleEditProfile}
+          onConfigureItems={() => setItemFieldsOpen(true)}
           onClose={() => setDrawerOpen(false)}
         />
       )}
 
       {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
+
+      {itemFieldsOpen && (
+        <ItemFieldsModal
+          company={company}
+          onClose={() => setItemFieldsOpen(false)}
+          onSaved={() => {}}
+        />
+      )}
     </div>
   )
 }

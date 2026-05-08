@@ -13,6 +13,7 @@ export default function UserDrawer({
   onToggleTheme, onSignOut, onEditProfile, onClose,
   installPrompt, onInstall,
   notifPermission, onToggleNotifications,
+  onConfigureItems,
 }) {
   const [prodOpen, setProdOpen]       = useState(false)
   const [configOpen, setConfigOpen]   = useState(false)
@@ -68,6 +69,15 @@ export default function UserDrawer({
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>
               Equipe
+            </button>
+          )}
+
+          {isAdmin && (
+            <button className="drawer-item" onClick={() => { onClose(); onConfigureItems() }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+              Configurar itens
             </button>
           )}
 

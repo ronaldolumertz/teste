@@ -6,6 +6,7 @@ import Layout from '../components/Layout'
 import KanbanColumn from '../components/KanbanColumn'
 import CardModal from '../components/CardModal'
 import ColumnModal from '../components/ColumnModal'
+import { DEFAULT_ITEM_FIELDS } from '../components/ItemFieldsModal'
 
 const COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#22c55e','#14b8a6','#38bdf8','#64748b','#a855f7']
 
@@ -147,19 +148,34 @@ export default function Board() {
 
   const handleSaveCard = async (form) => {
     if (!form.id) {
-      await supabase.from('cards').insert({
+      const { data: newCard } = await supabase.from('cards').insert({
         company_id: company.id,
         column_id: form.column_id,
         name: form.name,
         company_name: form.company_name,
         email: form.email,
         phone: form.phone,
-        value: form.value,
+        value: form.value || 0,
         priority: form.priority,
         tags: form.tags,
         notes: form.notes,
         position: form.position,
-      })
+      }).select().single()
+      if (newCard && form._pendingProds?.length > 0) {
+        await Promise.all(form._pendingProds.map(pp =>
+          supabase.from('card_products').insert({
+            card_id: newCard.id, product_id: pp.product_id,
+            product_name: pp.product_name, product_type: pp.product_type,
+            unit_price: pp.unit_price, quantity: pp.quantity,
+            width: pp.width, height: pp.height, total: pp.total,
+            customization_notes: pp.customization_notes || '', attachments: [],
+          })
+        ))
+        const totalValue = form._pendingProds.reduce((s, pp) => s + Number(pp.total), 0)
+        if (totalValue > 0) {
+          await supabase.from('cards').update({ value: totalValue }).eq('id', newCard.id)
+        }
+      }
     } else {
       await supabase.from('cards').update({
         name: form.name, company_name: form.company_name, email: form.email,
@@ -529,6 +545,7 @@ export default function Board() {
           card={editingCard}
           columns={columns}
           canEdit={canEditColumn(editingCard.column_id)}
+          itemFields={{ ...DEFAULT_ITEM_FIELDS, ...(company.item_fields || {}) }}
           onSave={handleSaveCard}
           onDelete={handleDeleteCard}
           onClose={() => setEditingCard(null)}
