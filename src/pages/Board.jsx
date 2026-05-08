@@ -92,6 +92,13 @@ export default function Board() {
   }, [company.id, fetchAll])
 
   // ── Permissions helper ─────────────────────────────────────
+  const canViewColumn = useCallback((colId) => {
+    if (isAdmin) return true
+    const col = columns.find(c => c.id === colId)
+    if (col?.access_all) return true
+    return myPerms.some(p => p.column_id === colId)
+  }, [isAdmin, columns, myPerms])
+
   const canEditColumn = useCallback((colId) => {
     if (isAdmin) return true
     if (profile.role === 'viewer') return false
@@ -357,7 +364,7 @@ export default function Board() {
 
   const renderEtapas = (cols, sectorId) => (
     <>
-      {cols.map(col => (
+      {cols.filter(col => canViewColumn(col.id)).map(col => (
         <KanbanColumn
           key={col.id}
           column={col}
@@ -383,6 +390,8 @@ export default function Board() {
     .filter(c => !c.sector_id)
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
 
+  const hasAnyAccess = isAdmin || columns.some(c => canViewColumn(c.id))
+
   if (loading) return (
     <Layout stats={stats} search={search} onSearch={setSearch}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -404,7 +413,25 @@ export default function Board() {
         </div>
       )}
 
-      <div className="board-areas" ref={boardRef} onMouseDown={handleBoardMouseDown}>
+      {!hasAnyAccess && !loading && (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          height: '100%', gap: 16, padding: 32, textAlign: 'center',
+        }}>
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" opacity=".25">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+            Sem acesso ao board
+          </p>
+          <p style={{ fontSize: 13, color: 'var(--text-dim)', margin: 0, maxWidth: 340, lineHeight: 1.6 }}>
+            Você ainda não tem acesso a nenhuma etapa. Entre em contato com o administrador para solicitar acesso.
+          </p>
+        </div>
+      )}
+
+      <div className="board-areas" ref={boardRef} onMouseDown={handleBoardMouseDown} style={!hasAnyAccess ? { display: 'none' } : {}}>
         <div className="board-row">
           {sectors
             .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
@@ -412,6 +439,8 @@ export default function Board() {
               const sectorCols = columns
                 .filter(c => c.sector_id === sector.id)
                 .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+              const visibleCols = sectorCols.filter(c => canViewColumn(c.id))
+              if (!isAdmin && visibleCols.length === 0) return null
               return (
                 <div key={sector.id} className="sector">
                   <div className="sector-header">
@@ -463,7 +492,7 @@ export default function Board() {
               )
             })}
 
-          {noSectorCols.length > 0 && (
+          {noSectorCols.filter(c => canViewColumn(c.id)).length > 0 && (
             <div className="sector sector-unsorted">
               <div className="sector-header">
                 <span className="sector-title">Sem Setor</span>
