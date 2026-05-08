@@ -108,7 +108,7 @@ export function useCRMStore() {
     update(d => ({
       ...d,
       cards: [...d.cards, {
-        id, columnId, name: 'Novo Contato', company: '',
+        id, columnId, name: 'Novo Item', company: '',
         email: '', phone: '', value: 0, priority: 'medium', tags: [], notes: '',
       }],
     }))

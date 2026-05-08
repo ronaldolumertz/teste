@@ -157,7 +157,7 @@ export default function CardModal({ card, columns, canEdit, onSave, onDelete, on
           <div className="card-avatar" style={{ background: columns.find(c => c.id === form.column_id)?.color || '#6366f1' }}>
             {form.name?.slice(0, 2).toUpperCase() || '??'}
           </div>
-          <span className="modal-title">{canEdit ? 'Editar Contato' : 'Visualizar Contato'}</span>
+          <span className="modal-title">{canEdit ? 'Editar Item' : 'Visualizar Item'}</span>
           <button className="btn-icon" onClick={onClose}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M18 6 6 18M6 6l12 12"/>

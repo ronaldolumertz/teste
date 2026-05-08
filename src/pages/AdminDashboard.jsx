@@ -56,7 +56,7 @@ export default function AdminDashboard() {
                       <span className="admin-stat-value">{c.profiles?.length || 0}</span>
                     </div>
                     <div className="admin-stat">
-                      <span className="admin-stat-label">Contatos</span>
+                      <span className="admin-stat-label">Itens</span>
                       <span className="admin-stat-value">{c.cards?.length || 0}</span>
                     </div>
                     <div className="admin-stat">

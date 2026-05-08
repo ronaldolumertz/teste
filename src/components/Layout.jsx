@@ -167,7 +167,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
 
           {stats && (
             <div className="header-stats">
-              <div className="stat-pill blue"><strong>{stats.cards}</strong> contatos</div>
+              <div className="stat-pill blue"><strong>{stats.cards}</strong> itens</div>
               <div className="stat-pill green"><strong>{stats.value}</strong> pipeline</div>
             </div>
           )}

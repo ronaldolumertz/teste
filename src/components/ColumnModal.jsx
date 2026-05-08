@@ -156,7 +156,7 @@ export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDe
         {confirmDelete ? (
           <div className="modal-footer" style={{ flexDirection:'column', gap:10, alignItems:'stretch' }}>
             <p style={{ fontSize:13, color:'var(--text-muted)', margin:0 }}>
-              Tem certeza? Todos os contatos desta coluna serão excluídos permanentemente.
+              Tem certeza? Todos os itens desta coluna serão excluídos permanentemente.
             </p>
             <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setConfirmDelete(false)}>Cancelar</button>

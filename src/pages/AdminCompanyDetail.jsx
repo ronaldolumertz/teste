@@ -63,7 +63,7 @@ export default function AdminCompanyDetail() {
               <span className="admin-stat-value">{members.length}</span>
             </div>
             <div className="admin-stat">
-              <span className="admin-stat-label">Contatos</span>
+              <span className="admin-stat-label">Itens</span>
               <span className="admin-stat-value">{cards.length}</span>
             </div>
             <div className="admin-stat">
@@ -111,7 +111,7 @@ export default function AdminCompanyDetail() {
                   <div className="admin-item-info">
                     <div className="admin-item-name">{col.title}</div>
                   </div>
-                  <span style={{ fontSize:12, color:'var(--text-muted)' }}>{colCards.length} contato{colCards.length !== 1 ? 's' : ''}</span>
+                  <span style={{ fontSize:12, color:'var(--text-muted)' }}>{colCards.length} item{colCards.length !== 1 ? 's' : ''}</span>
                   {colVal > 0 && <span style={{ fontSize:13, fontWeight:700, color:'var(--success)' }}>{fmt(colVal)}</span>}
                 </div>
               )

@@ -126,7 +126,7 @@ export default function Board() {
       _isNew: true,
       company_id: company.id,
       column_id: columnId,
-      name: 'Novo Contato',
+      name: 'Novo Item',
       position: maxPos + 100,
       tags: [],
       priority: 'medium',
@@ -526,7 +526,7 @@ export default function Board() {
           <div className="modal-overlay" onClick={() => setPendingMove(null)}>
             <div className="modal confirm-modal" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
-                <span className="modal-title">Mover contato</span>
+                <span className="modal-title">Mover item</span>
                 <button className="btn-icon" onClick={() => setPendingMove(null)}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M18 6 6 18M6 6l12 12"/>
@@ -626,7 +626,7 @@ export default function Board() {
             </div>
             <div className="modal-body">
               <p style={{ fontSize: 14, color: 'var(--text)' }}>
-                Excluir este setor? As etapas serão movidas para <strong>"Sem Setor"</strong> e os contatos serão preservados.
+                Excluir este setor? As etapas serão movidas para <strong>"Sem Setor"</strong> e os itens serão preservados.
               </p>
             </div>
             <div className="modal-footer">
