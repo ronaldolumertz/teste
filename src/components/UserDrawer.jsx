@@ -18,7 +18,24 @@ export default function UserDrawer({
   const [prodOpen, setProdOpen]       = useState(false)
   const [configOpen, setConfigOpen]   = useState(false)
   const [installTip, setInstallTip]   = useState(false)
+  const [refreshing, setRefreshing]   = useState(false)
   const navigate = useNavigate()
+
+  const handleRenovar = async () => {
+    setRefreshing(true)
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(regs.map(r => r.unregister()))
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys()
+        await Promise.all(keys.map(k => caches.delete(k)))
+      }
+    } finally {
+      window.location.reload(true)
+    }
+  }
 
   const goTo = (path) => { onClose(); navigate(path) }
 
@@ -195,6 +212,16 @@ export default function UserDrawer({
                   Browser não suporta notificações
                 </div>
               )}
+
+              <button className="drawer-subitem" onClick={handleRenovar} disabled={refreshing}
+                style={{ color: 'var(--accent)', opacity: refreshing ? .6 : 1 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }}>
+                  <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                {refreshing ? 'Renovando…' : 'Renovar app'}
+              </button>
             </div>
           )}
 

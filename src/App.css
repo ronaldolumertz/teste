@@ -1,3 +1,6 @@
+/* ── Animations ─────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ── PWA Install Banner ──────────────────────────────────── */
 .pwa-install-banner { display:flex; align-items:center; gap:10px; padding:10px 16px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; }
 .pwa-install-icon { width:36px; height:36px; background:var(--accent-light); border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--accent); flex-shrink:0; }
