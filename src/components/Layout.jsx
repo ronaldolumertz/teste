@@ -37,7 +37,7 @@ function useTheme(userId) {
 }
 
 export default function Layout({ children, stats, search, onSearch, onAddColumn }) {
-  const { profile, company, isAdmin, isSuperAdmin, signOut } = useAuth()
+  const { profile, company, isAdmin, isSuperAdmin, signOut, updateCompany } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme(profile?.id)
@@ -256,7 +256,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
         <ItemFieldsModal
           company={company}
           onClose={() => setItemFieldsOpen(false)}
-          onSaved={() => {}}
+          onSaved={(fields) => updateCompany({ item_fields: fields })}
         />
       )}
     </div>

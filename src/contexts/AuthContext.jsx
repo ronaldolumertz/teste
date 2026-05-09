@@ -89,6 +89,7 @@ export function AuthProvider({ children }) {
       isAdmin, isOwner, isSuperAdmin,
       signUp, signIn, signOut,
       refreshProfile: () => user && fetchProfile(user.id),
+      updateCompany: (updates) => setCompany(prev => ({ ...prev, ...updates })),
     }}>
       {children}
     </AuthContext.Provider>

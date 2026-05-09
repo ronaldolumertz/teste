@@ -19,13 +19,16 @@ export const DEFAULT_ITEM_FIELDS = {
 }
 
 export default function ItemFieldsModal({ company, onClose, onSaved }) {
-  const [fields, setFields] = useState({ ...DEFAULT_ITEM_FIELDS, ...(company?.item_fields || {}) })
+  const lsKey = `item_fields_${company?.id}`
+  const stored = company?.item_fields || JSON.parse(localStorage.getItem(lsKey) || 'null')
+  const [fields, setFields] = useState({ ...DEFAULT_ITEM_FIELDS, ...(stored || {}) })
   const [saving, setSaving] = useState(false)
 
   const toggle = (key) => setFields(f => ({ ...f, [key]: !f[key] }))
 
   const save = async () => {
     setSaving(true)
+    localStorage.setItem(lsKey, JSON.stringify(fields))
     await supabase.from('companies').update({ item_fields: fields }).eq('id', company.id)
     setSaving(false)
     onSaved(fields)

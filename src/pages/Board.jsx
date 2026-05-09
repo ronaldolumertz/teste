@@ -626,7 +626,7 @@ export default function Board() {
           card={editingCard}
           columns={columns}
           canEdit={canEditColumn(editingCard.column_id)}
-          itemFields={{ ...DEFAULT_ITEM_FIELDS, ...(company.item_fields || {}) }}
+          itemFields={{ ...DEFAULT_ITEM_FIELDS, ...(company.item_fields || JSON.parse(localStorage.getItem(`item_fields_${company.id}`) || 'null') || {}) }}
           onSave={handleSaveCard}
           onDelete={handleDeleteCard}
           onClose={() => setEditingCard(null)}
