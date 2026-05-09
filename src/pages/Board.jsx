@@ -82,8 +82,14 @@ export default function Board() {
   }, [])
 
   const handleSectorColor = async (sectorId, color) => {
+    // Persist to localStorage (instant, works without DB migration)
+    const key = `sc_${company.id}`
+    const stored = JSON.parse(localStorage.getItem(key) || '{}')
+    if (color) stored[sectorId] = color; else delete stored[sectorId]
+    localStorage.setItem(key, JSON.stringify(stored))
     setSectors(prev => prev.map(s => s.id === sectorId ? { ...s, color: color || null } : s))
     setColorPickerSectorId(null)
+    // Also try to persist to DB (works once migration 014_sector_color.sql is run)
     await supabase.from('sectors').update({ color: color || null }).eq('id', sectorId)
   }
 
@@ -107,7 +113,9 @@ export default function Board() {
       supabase.from('column_permissions').select('*').eq('profile_id', profile.id),
     ])
     if (colErr) setBoardError(colErr.message)
-    setSectors(sects || [])
+    // Merge DB colors with localStorage fallback (localStorage wins if DB column missing)
+    const storedColors = JSON.parse(localStorage.getItem(`sc_${company.id}`) || '{}')
+    setSectors((sects || []).map(s => ({ ...s, color: s.color || storedColors[s.id] || null })))
     setColumns(cols || [])
     const cardList = cds || []
     setCards(cardList)
