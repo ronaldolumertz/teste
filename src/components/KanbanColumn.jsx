@@ -5,11 +5,18 @@ function fmtCurrency(v) {
   return v ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v) : null
 }
 
+function pluralize(name) {
+  if (!name) return 'Itens'
+  if (name.endsWith('m')) return name.slice(0, -1) + 'ns'
+  return name + 's'
+}
+
 export default function KanbanColumn({
   column, cards, isAdmin, canEdit,
   onEditColumn, onRenameColumn, onAddCard, onEditCard,
   draggingCardId, onDragCardStart, onDragCardEnd,
   onDropCard, onDropColumn, onTouchDragStart,
+  itemName = 'Item',
 }) {
   const [dragOver, setDragOver]       = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
@@ -82,7 +89,7 @@ export default function KanbanColumn({
               <rect x="3" y="3" width="18" height="18" rx="2"/>
               <path d="M3 9h18M9 21V9"/>
             </svg>
-            <span>Sem itens</span>
+            <span>Sem {pluralize(itemName)}</span>
           </div>
         )}
         {cards.map(card => (
@@ -102,7 +109,7 @@ export default function KanbanColumn({
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M12 5v14M5 12h14"/>
           </svg>
-          Adicionar item
+          Adicionar {itemName}
         </button>
       )}
     </div>

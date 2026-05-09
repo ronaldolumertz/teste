@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import UserDrawer from './UserDrawer'
 import ProfileModal from './ProfileModal'
 import ItemFieldsModal from './ItemFieldsModal'
+import ItemNameModal from './ItemNameModal'
 import { subscribePush, unsubscribePush, getNotificationPermission } from '../lib/push'
 
 function useTheme(userId) {
@@ -37,13 +38,14 @@ function useTheme(userId) {
 }
 
 export default function Layout({ children, stats, search, onSearch, onAddColumn }) {
-  const { profile, company, isAdmin, isSuperAdmin, signOut, updateCompany } = useAuth()
+  const { profile, company, isAdmin, isSuperAdmin, signOut, updateCompany, itemName, updateItemName } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme(profile?.id)
   const [drawerOpen, setDrawerOpen]         = useState(false)
   const [profileOpen, setProfileOpen]       = useState(false)
   const [itemFieldsOpen, setItemFieldsOpen] = useState(false)
+  const [itemNameOpen, setItemNameOpen]     = useState(false)
   const [prodOpen, setProdOpen]             = useState(false)
   const prodRef = useRef(null)
   const [installPrompt, setInstallPrompt] = useState(() => window.__pwaPrompt ?? null)
@@ -245,12 +247,22 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
           onToggleNotifications={handleToggleNotifications}
           onSignOut={handleSignOut}
           onEditProfile={handleEditProfile}
-          onConfigureItems={() => setItemFieldsOpen(true)}
+          onConfigureItemName={() => setItemNameOpen(true)}
+          onConfigureItemFields={() => setItemFieldsOpen(true)}
           onClose={() => setDrawerOpen(false)}
         />
       )}
 
       {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
+
+      {itemNameOpen && company && (
+        <ItemNameModal
+          company={company}
+          currentName={itemName}
+          onClose={() => setItemNameOpen(false)}
+          onSaved={(name) => { updateItemName(name); setItemNameOpen(false) }}
+        />
+      )}
 
       {itemFieldsOpen && (
         <ItemFieldsModal

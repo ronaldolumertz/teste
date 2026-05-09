@@ -38,7 +38,7 @@ function FileIcon({ type = '' }) {
   )
 }
 
-export default function CardModal({ card, columns, canEdit, itemFields: rawItemFields, onSave, onDelete, onClose }) {
+export default function CardModal({ card, columns, canEdit, itemFields: rawItemFields, itemName = 'Item', onSave, onDelete, onClose }) {
   const fieldList = normalizeItemFields(rawItemFields)
   const isEnabled = (key) => {
     const f = fieldList.find(ff => ff.key === key || ff.id === key)
@@ -191,7 +191,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
           <div className="card-avatar" style={{ background: columns.find(c => c.id === form.column_id)?.color || '#6366f1' }}>
             {form.name?.slice(0, 2).toUpperCase() || '??'}
           </div>
-          <span className="modal-title">{canEdit ? 'Editar Item' : 'Visualizar Item'}</span>
+          <span className="modal-title">{canEdit ? `Editar ${itemName}` : `Visualizar ${itemName}`}</span>
           <button className="btn-icon" onClick={onClose}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M18 6 6 18M6 6l12 12"/>

@@ -35,7 +35,7 @@ function fmtCurrency(v) {
 }
 
 export default function Board() {
-  const { profile, company, isAdmin } = useAuth()
+  const { profile, company, isAdmin, itemName } = useAuth()
 
   const [sectors, setSectors]           = useState([])
   const [columns, setColumns]           = useState([])
@@ -183,7 +183,7 @@ export default function Board() {
       _isNew: true,
       company_id: company.id,
       column_id: columnId,
-      name: 'Novo Item',
+      name: `Novo ${itemName}`,
       position: maxPos + 100,
       tags: [],
       priority: 'medium',
@@ -446,6 +446,7 @@ export default function Board() {
           onDropCard={handleDropCard}
           onDropColumn={handleDropColumn}
           onTouchDragStart={handleTouchDragStart}
+          itemName={itemName}
         />
       ))}
     </>
@@ -629,6 +630,7 @@ export default function Board() {
           columns={columns}
           canEdit={canEditColumn(editingCard.column_id)}
           itemFields={company.item_fields || JSON.parse(localStorage.getItem(`item_fields_${company.id}`) || 'null') || null}
+          itemName={itemName}
           onSave={handleSaveCard}
           onDelete={handleDeleteCard}
           onClose={() => setEditingCard(null)}

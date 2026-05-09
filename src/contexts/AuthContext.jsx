@@ -83,10 +83,17 @@ export function AuthProvider({ children }) {
   const isOwner      = profile?.role === 'owner'
   const isSuperAdmin = profile?.is_superadmin === true
 
+  const itemName = company?.item_name
+    || (company?.id ? localStorage.getItem(`item_name_${company.id}`) : null)
+    || 'Item'
+
+  const updateItemName = (name) => setCompany(prev => ({ ...prev, item_name: name }))
+
   return (
     <AuthContext.Provider value={{
       user, profile, company, loading,
       isAdmin, isOwner, isSuperAdmin,
+      itemName, updateItemName,
       signUp, signIn, signOut,
       refreshProfile: () => user && fetchProfile(user.id),
       updateCompany: (updates) => setCompany(prev => ({ ...prev, ...updates })),

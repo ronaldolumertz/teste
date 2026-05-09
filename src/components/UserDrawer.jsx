@@ -13,10 +13,11 @@ export default function UserDrawer({
   onToggleTheme, onSignOut, onEditProfile, onClose,
   installPrompt, onInstall,
   notifPermission, onToggleNotifications,
-  onConfigureItems,
+  onConfigureItemName, onConfigureItemFields,
 }) {
-  const [prodOpen, setProdOpen]       = useState(false)
-  const [configOpen, setConfigOpen]   = useState(false)
+  const [prodOpen, setProdOpen]           = useState(false)
+  const [configOpen, setConfigOpen]       = useState(false)
+  const [itemsOpen, setItemsOpen]         = useState(false)
   const [installTip, setInstallTip]   = useState(false)
   const [refreshing, setRefreshing]   = useState(false)
   const navigate = useNavigate()
@@ -90,12 +91,28 @@ export default function UserDrawer({
           )}
 
           {isAdmin && (
-            <button className="drawer-item" onClick={() => { onClose(); onConfigureItems() }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-              </svg>
-              Configurar itens
-            </button>
+            <>
+              <button className="drawer-item" onClick={() => setItemsOpen(v => !v)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+                Configurar itens
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  style={{ marginLeft:'auto', transition:'transform 150ms', transform: itemsOpen ? 'rotate(180deg)' : 'none', opacity:.4 }}>
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </button>
+              {itemsOpen && (
+                <div className="drawer-subitems">
+                  <button className="drawer-subitem" onClick={() => { onClose(); onConfigureItemName() }}>
+                    Nome do item
+                  </button>
+                  <button className="drawer-subitem" onClick={() => { onClose(); onConfigureItemFields() }}>
+                    Campos do item
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           <div className="drawer-divider" />
