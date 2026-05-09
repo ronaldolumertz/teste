@@ -460,6 +460,7 @@ export default function Board() {
               return (
                 <div key={sector.id} className="sector">
                   <div className="sector-header">
+                    <div className="sector-title-zone">
                     {renamingSectorId === sector.id ? (
                       <input
                         className="sector-title-input"
@@ -479,6 +480,7 @@ export default function Board() {
                         {sector.title}
                       </span>
                     )}
+                    </div>
                     {isAdmin && (
                       <div className="sector-actions">
                         <button className="btn btn-ghost btn-sm" onClick={() => handleAddEtapa(sector.id)}>
