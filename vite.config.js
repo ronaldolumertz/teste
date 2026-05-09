@@ -31,6 +31,20 @@ export default defineConfig({
     }),
   ],
   base: '/teste/',
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('node_modules/react-dom')) return 'react-dom'
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-router') || id.includes('node_modules/scheduler')) return 'react'
+          if (id.includes('@supabase/auth-js') || id.includes('@supabase/supabase-js')) return 'supabase-auth'
+          if (id.includes('@supabase/realtime-js') || id.includes('@supabase/phoenix')) return 'supabase-rt'
+          if (id.includes('@supabase/postgrest-js') || id.includes('@supabase/storage-js') || id.includes('@supabase/functions-js')) return 'supabase-rest'
+          if (id.includes('@dnd-kit')) return 'dnd'
+        },
+      },
+    },
+  },
   define: {
     __VAPID_PUBLIC_KEY__: JSON.stringify('BLdQsjFMh7Av246obw_cl4a4ggOD4bATABaeFJgQaauRVSD1ucqnkMsvlgw48t4NrpMj-U2sgjG0zwT4MIRi2Do'),
   },
