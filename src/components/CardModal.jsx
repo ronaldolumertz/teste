@@ -51,6 +51,8 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
   const [cardProds, setCardProds]   = useState([])
   const [addForm, setAddForm]       = useState(null)
   const [adding, setAdding]         = useState(false)
+  const [saving, setSaving]         = useState(false)
+  const [saveError, setSaveError]   = useState('')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [removingId, setRemovingId] = useState(null)
   const fileInputRef = useRef(null)
@@ -174,18 +176,26 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
     e.target.value = ''
   }
 
-  const handleSave = () => {
-    const pendingProds = cardProds.filter(cp => cp._pending)
-    onSave({
-      ...form,
-      value: cardProds.reduce((s, cp) => s + Number(cp.total), 0),
-      _pendingProds: pendingProds.length > 0 ? pendingProds : undefined,
-    })
+  const handleSave = async () => {
+    if (saving || !form.name?.trim()) return
+    setSaving(true)
+    setSaveError('')
+    try {
+      const pendingProds = cardProds.filter(cp => cp._pending)
+      await onSave({
+        ...form,
+        value: cardProds.reduce((s, cp) => s + Number(cp.total), 0),
+        _pendingProds: pendingProds.length > 0 ? pendingProds : undefined,
+      })
+    } catch {
+      setSaveError(`Erro ao salvar ${itemName.toLowerCase()}. Verifique sua conexão e tente novamente.`)
+      setSaving(false)
+    }
   }
 
   return createPortal(
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}
-      onKeyDown={e => e.key === 'Escape' && onClose()}>
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && !saving && onClose()}
+      onKeyDown={e => e.key === 'Escape' && !saving && onClose()}>
       <div className="modal" role="dialog" aria-modal="true">
         <div className="modal-header">
           <div className="card-avatar" style={{ background: columns.find(c => c.id === form.column_id)?.color || '#6366f1' }}>
@@ -555,9 +565,20 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
           </div>}
         </div>
 
+        {saveError && (
+          <div className="modal-save-error">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {saveError}
+          </div>
+        )}
+
         <div className="modal-footer">
           {canEdit && card.id && (
-            <button className="btn btn-danger" onClick={() => onDelete(card.id)}>
+            <button className="btn btn-danger" onClick={() => onDelete(card.id)} disabled={saving}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
               </svg>
@@ -570,10 +591,21 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
               Total: {fmt(grandTotal)}
             </span>
           )}
-          <button className="btn btn-ghost" onClick={onClose}>{canEdit ? 'Cancelar' : 'Fechar'}</button>
+          <button className="btn btn-ghost" onClick={onClose} disabled={saving}>
+            {canEdit ? 'Cancelar' : 'Fechar'}
+          </button>
           {canEdit && (
-            <button className="btn btn-primary" onClick={handleSave} disabled={!form.name?.trim()}>
-              Salvar
+            <button className="btn btn-primary" onClick={handleSave}
+              disabled={saving || !form.name?.trim()}>
+              {saving ? (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    style={{ animation: 'spin 0.8s linear infinite' }}>
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                  Salvando…
+                </>
+              ) : 'Salvar'}
             </button>
           )}
         </div>

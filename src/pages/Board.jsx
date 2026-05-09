@@ -10,6 +10,12 @@ import DefaultEntryModal from '../components/DefaultEntryModal'
 
 const COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#22c55e','#14b8a6','#38bdf8','#64748b','#a855f7']
 
+function pluralize(name) {
+  if (!name) return 'Itens'
+  if (name.endsWith('m')) return name.slice(0, -1) + 'ns'
+  return name + 's'
+}
+
 const SECTOR_PALETTE = [
   '#6366f1','#8b5cf6','#a855f7','#ec4899','#ef4444',
   '#f97316','#eab308','#22c55e','#14b8a6','#3b82f6',
@@ -203,7 +209,7 @@ export default function Board() {
   const handleQuickAdd = () => {
     const col = columns.find(c => c.id === defaultColumnId)
     if (!col) {
-      setDefaultEntryWarning(`Escolha uma etapa padrão para criar novos ${itemName}s pelo botão superior.`)
+      setDefaultEntryWarning(`Escolha uma etapa padrão para criar novos ${pluralize(itemName).toLowerCase()} pelo botão superior.`)
       setDefaultEntryOpen(true)
       return
     }
@@ -212,7 +218,7 @@ export default function Board() {
 
   const handleSaveCard = async (form) => {
     if (!form.id) {
-      const { data: newCard } = await supabase.from('cards').insert({
+      const { data: newCard, error: insertErr } = await supabase.from('cards').insert({
         company_id: company.id,
         column_id: form.column_id,
         name: form.name,
@@ -225,8 +231,9 @@ export default function Board() {
         notes: form.notes,
         position: form.position,
       }).select().single()
+      if (insertErr) throw insertErr
       if (newCard && form._pendingProds?.length > 0) {
-        await Promise.all(form._pendingProds.map(pp =>
+        const results = await Promise.all(form._pendingProds.map(pp =>
           supabase.from('card_products').insert({
             card_id: newCard.id, product_id: pp.product_id,
             product_name: pp.product_name, product_type: pp.product_type,
@@ -235,17 +242,20 @@ export default function Board() {
             customization_notes: pp.customization_notes || '', attachments: [],
           })
         ))
+        const prodErr = results.find(r => r.error)?.error
+        if (prodErr) throw prodErr
         const totalValue = form._pendingProds.reduce((s, pp) => s + Number(pp.total), 0)
         if (totalValue > 0) {
           await supabase.from('cards').update({ value: totalValue }).eq('id', newCard.id)
         }
       }
     } else {
-      await supabase.from('cards').update({
+      const { error: updateErr } = await supabase.from('cards').update({
         name: form.name, company_name: form.company_name, email: form.email,
         phone: form.phone, value: form.value, priority: form.priority,
         tags: form.tags, notes: form.notes, column_id: form.column_id,
       }).eq('id', form.id)
+      if (updateErr) throw updateErr
     }
     setEditingCard(null)
     fetchAll()
@@ -539,6 +549,31 @@ export default function Board() {
       </div>
 
       <div className="board-areas" ref={boardRef} onMouseDown={handleBoardMouseDown} style={!hasAnyAccess ? { display: 'none' } : {}}>
+        {!loading && hasAnyAccess && sectors.length === 0 && noSectorCols.length === 0 ? (
+          <div className="board-empty-state">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" opacity=".2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M3 9h18M9 21V9"/>
+            </svg>
+            {isAdmin ? (
+              <>
+                <p className="board-empty-title">Nenhum setor criado ainda.</p>
+                <p className="board-empty-sub">Organize seu pipeline criando setores e etapas.</p>
+                <button className="btn btn-primary" onClick={handleAddSector}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                  Criar primeiro setor
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="board-empty-title">Board ainda não configurado.</p>
+                <p className="board-empty-sub">Aguarde o administrador criar as etapas para começar.</p>
+              </>
+            )}
+          </div>
+        ) : (
         <div className="board-row" ref={rowRef}>
           {sectors
             .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
@@ -644,16 +679,6 @@ export default function Board() {
             </div>
           )}
 
-          {sectors.length === 0 && noSectorCols.length === 0 && isAdmin && (
-            <div className="sector-empty-state">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" opacity=".25">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M3 9h18M9 21V9"/>
-              </svg>
-              <p>Crie o primeiro setor para organizar as etapas do seu pipeline.</p>
-            </div>
-          )}
-
           {isAdmin && (
             <button className="add-sector-btn" onClick={handleAddSector}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -663,6 +688,7 @@ export default function Board() {
             </button>
           )}
         </div>
+        )}
       </div>
 
       {editingCard && (
