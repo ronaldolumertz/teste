@@ -71,7 +71,7 @@ export default function Board() {
   const handleBoardMouseDown = useCallback((e) => {
     const el = e.target
     // Only block on truly interactive elements — allow dragging from column body, sector background, etc.
-    if (el.closest('button') || el.closest('input') || el.closest('textarea') || el.closest('select') || el.closest('.column-card') || el.closest('.column-header') || el.closest('.add-item-btn')) return
+    if (el.closest('button') || el.closest('input') || el.closest('textarea') || el.closest('select') || el.closest('.card') || el.closest('.column-header') || el.closest('.add-item-btn')) return
     e.preventDefault()
     const scrollEl = rowRef.current
     panRef.current = { startX: e.clientX, scrollLeft: scrollEl.scrollLeft }
