@@ -1,0 +1,2 @@
+ALTER TABLE public.sectors
+  ADD COLUMN IF NOT EXISTS color TEXT;

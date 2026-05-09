@@ -10,6 +10,27 @@ import { DEFAULT_ITEM_FIELDS } from '../components/ItemFieldsModal'
 
 const COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#22c55e','#14b8a6','#38bdf8','#64748b','#a855f7']
 
+const SECTOR_PALETTE = [
+  '#6366f1','#8b5cf6','#a855f7','#ec4899','#ef4444',
+  '#f97316','#eab308','#22c55e','#14b8a6','#3b82f6',
+]
+
+function hexToRgba(hex, alpha) {
+  if (!hex) return undefined
+  const r = parseInt(hex.slice(1,3), 16)
+  const g = parseInt(hex.slice(3,5), 16)
+  const b = parseInt(hex.slice(5,7), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
+function contrastText(hex) {
+  if (!hex) return undefined
+  const r = parseInt(hex.slice(1,3), 16)
+  const g = parseInt(hex.slice(3,5), 16)
+  const b = parseInt(hex.slice(5,7), 16)
+  return (0.299*r + 0.587*g + 0.114*b) / 255 > 0.55 ? '#0f172a' : '#ffffff'
+}
+
 function fmtCurrency(v) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 }
@@ -34,6 +55,7 @@ export default function Board() {
   const [renamingSectorId, setRenamingSectorId]       = useState(null)
   const [renamingSectorTitle, setRenamingSectorTitle] = useState('')
   const [deletingSectorId, setDeletingSectorId]       = useState(null)
+  const [colorPickerSectorId, setColorPickerSectorId] = useState(null)
   const boardRef = useRef(null)
   const panRef   = useRef(null)
 
@@ -58,6 +80,23 @@ export default function Board() {
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
   }, [])
+
+  const handleSectorColor = async (sectorId, color) => {
+    setSectors(prev => prev.map(s => s.id === sectorId ? { ...s, color: color || null } : s))
+    setColorPickerSectorId(null)
+    await supabase.from('sectors').update({ color: color || null }).eq('id', sectorId)
+  }
+
+  useEffect(() => {
+    if (!colorPickerSectorId) return
+    const close = (e) => {
+      if (!e.target.closest('.sector-color-picker') && !e.target.closest('.btn-color-gear')) {
+        setColorPickerSectorId(null)
+      }
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [colorPickerSectorId])
 
   // ── Fetch ──────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
@@ -457,9 +496,13 @@ export default function Board() {
                 .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
               const visibleCols = sectorCols.filter(c => canViewColumn(c.id))
               if (!isAdmin && visibleCols.length === 0) return null
+              const hdrBg   = sector.color || undefined
+              const bodyBg  = sector.color ? hexToRgba(sector.color, 0.08) : undefined
+              const txtClr  = sector.color ? contrastText(sector.color) : undefined
+              const bdrClr  = sector.color ? hexToRgba(sector.color, 0.45) : undefined
               return (
-                <div key={sector.id} className="sector">
-                  <div className="sector-header">
+                <div key={sector.id} className="sector" style={bdrClr ? { borderColor: bdrClr } : {}}>
+                  <div className="sector-header" style={hdrBg ? { background: hdrBg, borderBottomColor: bdrClr } : {}}>
                     <div className="sector-title-zone">
                     {renamingSectorId === sector.id ? (
                       <input
@@ -475,6 +518,7 @@ export default function Board() {
                       />
                     ) : (
                       <span className="sector-title"
+                        style={txtClr ? { color: txtClr, background: hdrBg } : {}}
                         onDoubleClick={() => { if (!isAdmin) return; setRenamingSectorId(sector.id); setRenamingSectorTitle(sector.title) }}
                         title={isAdmin ? 'Duplo clique para renomear' : ''}>
                         {sector.title}
@@ -482,28 +526,55 @@ export default function Board() {
                     )}
                     </div>
                     {isAdmin && (
-                      <div className="sector-actions">
-                        <button className="btn btn-ghost btn-sm" onClick={() => handleAddEtapa(sector.id)}>
+                      <div className="sector-actions" style={{ position:'relative' }}>
+                        <button className="btn btn-ghost btn-sm" onClick={() => handleAddEtapa(sector.id)}
+                          style={txtClr ? { color: txtClr, borderColor: `${txtClr}44` } : {}}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <path d="M12 5v14M5 12h14"/>
                           </svg>
                           Nova etapa
                         </button>
-                        <button className="btn-icon" title="Renomear" onClick={() => { setRenamingSectorId(sector.id); setRenamingSectorTitle(sector.title) }}>
+                        <button className="btn-icon btn-color-gear" title="Cor do setor"
+                          style={txtClr ? { color: txtClr } : {}}
+                          onClick={() => setColorPickerSectorId(v => v === sector.id ? null : sector.id)}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                        <button className="btn-icon" title="Renomear"
+                          style={txtClr ? { color: txtClr } : {}}
+                          onClick={() => { setRenamingSectorId(sector.id); setRenamingSectorTitle(sector.title) }}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                           </svg>
                         </button>
-                        <button className="btn-icon danger" title="Excluir setor" onClick={() => setDeletingSectorId(sector.id)}>
+                        <button className="btn-icon danger" title="Excluir setor"
+                          style={txtClr ? { color: txtClr } : {}}
+                          onClick={() => setDeletingSectorId(sector.id)}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
                           </svg>
                         </button>
+                        {colorPickerSectorId === sector.id && (
+                          <div className="sector-color-picker">
+                            <div className="sector-color-palette">
+                              {SECTOR_PALETTE.map(c => (
+                                <button key={c} className={`sector-color-swatch${sector.color === c ? ' active' : ''}`}
+                                  style={{ background: c }}
+                                  onClick={() => handleSectorColor(sector.id, c)} />
+                              ))}
+                            </div>
+                            <button className="sector-color-reset" onClick={() => handleSectorColor(sector.id, null)}>
+                              Remover cor
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                  <div className="sector-columns">
+                  <div className="sector-columns" style={bodyBg ? { background: bodyBg } : {}}>
                     {renderEtapas(sectorCols, sector.id)}
                   </div>
                 </div>
