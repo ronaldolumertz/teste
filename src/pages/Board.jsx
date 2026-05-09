@@ -56,23 +56,26 @@ export default function Board() {
   const [deletingSectorId, setDeletingSectorId]       = useState(null)
   const [colorPickerSectorId, setColorPickerSectorId] = useState(null)
   const boardRef = useRef(null)
+  const rowRef   = useRef(null)
   const panRef   = useRef(null)
 
   const handleBoardMouseDown = useCallback((e) => {
     const el = e.target
-    if (el.closest('.column-card') || el.closest('.column') || el.closest('.add-column-btn') || el.closest('.add-sector-btn') || el.closest('.sector-header')) return
+    // Only block on truly interactive elements — allow dragging from column body, sector background, etc.
+    if (el.closest('button') || el.closest('input') || el.closest('textarea') || el.closest('select') || el.closest('.column-card') || el.closest('.column-header') || el.closest('.add-item-btn')) return
     e.preventDefault()
-    panRef.current = { startX: e.clientX, scrollLeft: boardRef.current.scrollLeft }
-    boardRef.current.style.cursor = 'grabbing'
-    boardRef.current.style.userSelect = 'none'
+    const scrollEl = rowRef.current
+    panRef.current = { startX: e.clientX, scrollLeft: scrollEl.scrollLeft }
+    scrollEl.style.cursor = 'grabbing'
+    scrollEl.style.userSelect = 'none'
     const onMove = (ev) => {
       if (!panRef.current) return
-      boardRef.current.scrollLeft = panRef.current.scrollLeft - (ev.clientX - panRef.current.startX)
+      scrollEl.scrollLeft = panRef.current.scrollLeft - (ev.clientX - panRef.current.startX)
     }
     const onUp = () => {
       panRef.current = null
-      boardRef.current.style.cursor = ''
-      boardRef.current.style.userSelect = ''
+      scrollEl.style.cursor = ''
+      scrollEl.style.userSelect = ''
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
@@ -494,7 +497,7 @@ export default function Board() {
       )}
 
       <div className="board-areas" ref={boardRef} onMouseDown={handleBoardMouseDown} style={!hasAnyAccess ? { display: 'none' } : {}}>
-        <div className="board-row">
+        <div className="board-row" ref={rowRef}>
           {sectors
             .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
             .map(sector => {
