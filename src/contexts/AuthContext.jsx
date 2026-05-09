@@ -89,11 +89,18 @@ export function AuthProvider({ children }) {
 
   const updateItemName = (name) => setCompany(prev => ({ ...prev, item_name: name }))
 
+  const defaultColumnId = company?.default_column_id
+    || (company?.id ? localStorage.getItem(`default_column_${company.id}`) : null)
+    || null
+
+  const updateDefaultColumnId = (id) => setCompany(prev => ({ ...prev, default_column_id: id }))
+
   return (
     <AuthContext.Provider value={{
       user, profile, company, loading,
       isAdmin, isOwner, isSuperAdmin,
       itemName, updateItemName,
+      defaultColumnId, updateDefaultColumnId,
       signUp, signIn, signOut,
       refreshProfile: () => user && fetchProfile(user.id),
       updateCompany: (updates) => setCompany(prev => ({ ...prev, ...updates })),

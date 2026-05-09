@@ -13,7 +13,7 @@ export default function UserDrawer({
   onToggleTheme, onSignOut, onEditProfile, onClose,
   installPrompt, onInstall,
   notifPermission, onToggleNotifications,
-  onConfigureItemName, onConfigureItemFields,
+  onConfigureItemName, onConfigureItemFields, onConfigureDefaultEntry,
 }) {
   const [prodOpen, setProdOpen]           = useState(false)
   const [configOpen, setConfigOpen]       = useState(false)
@@ -109,6 +109,9 @@ export default function UserDrawer({
                   </button>
                   <button className="drawer-subitem" onClick={() => { onClose(); onConfigureItemFields() }}>
                     Campos do item
+                  </button>
+                  <button className="drawer-subitem" onClick={() => { onClose(); onConfigureDefaultEntry() }}>
+                    Entrada padrão
                   </button>
                 </div>
               )}

@@ -6,6 +6,7 @@ import Layout from '../components/Layout'
 import KanbanColumn from '../components/KanbanColumn'
 import CardModal from '../components/CardModal'
 import ColumnModal from '../components/ColumnModal'
+import DefaultEntryModal from '../components/DefaultEntryModal'
 
 const COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#22c55e','#14b8a6','#38bdf8','#64748b','#a855f7']
 
@@ -35,7 +36,7 @@ function fmtCurrency(v) {
 }
 
 export default function Board() {
-  const { profile, company, isAdmin, itemName } = useAuth()
+  const { profile, company, isAdmin, itemName, defaultColumnId, updateDefaultColumnId } = useAuth()
 
   const [sectors, setSectors]           = useState([])
   const [columns, setColumns]           = useState([])
@@ -58,6 +59,8 @@ export default function Board() {
   const boardRef = useRef(null)
   const rowRef   = useRef(null)
   const panRef   = useRef(null)
+  const [defaultEntryOpen, setDefaultEntryOpen]     = useState(false)
+  const [defaultEntryWarning, setDefaultEntryWarning] = useState('')
 
   const handleBoardMouseDown = useCallback((e) => {
     const el = e.target
@@ -169,9 +172,11 @@ export default function Board() {
       if (c.column_id !== colId) return false
       if (!search.trim()) return true
       const q = search.toLowerCase()
-      return c.name.toLowerCase().includes(q) ||
+      return c.name?.toLowerCase().includes(q) ||
              c.company_name?.toLowerCase().includes(q) ||
-             c.email?.toLowerCase().includes(q)
+             c.email?.toLowerCase().includes(q) ||
+             c.phone?.toLowerCase().includes(q) ||
+             (c.tags || []).some(t => t.toLowerCase().includes(q))
     })
   }, [cards, search])
 
@@ -193,6 +198,16 @@ export default function Board() {
       company_name: '',
       value: 0,
     })
+  }
+
+  const handleQuickAdd = () => {
+    const col = columns.find(c => c.id === defaultColumnId)
+    if (!col) {
+      setDefaultEntryWarning(`Escolha uma etapa padrão para criar novos ${itemName}s pelo botão superior.`)
+      setDefaultEntryOpen(true)
+      return
+    }
+    handleAddCard(col.id)
   }
 
   const handleSaveCard = async (form) => {
@@ -459,7 +474,7 @@ export default function Board() {
   const hasAnyAccess = isAdmin || columns.some(c => canViewColumn(c.id))
 
   if (loading) return (
-    <Layout stats={stats} search={search} onSearch={setSearch}>
+    <Layout stats={stats}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         <div className="spinner" />
       </div>
@@ -467,7 +482,7 @@ export default function Board() {
   )
 
   return (
-    <Layout stats={stats} search={search} onSearch={setSearch}>
+    <Layout stats={stats}>
       {boardError && (
         <div style={{
           background:'rgba(239,68,68,.1)', border:'1px solid rgba(239,68,68,.3)',
@@ -496,6 +511,32 @@ export default function Board() {
           </p>
         </div>
       )}
+
+      <div className="board-quick-bar">
+        <button className="btn btn-primary board-quick-add" onClick={handleQuickAdd}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Adicionar {itemName}
+        </button>
+        <div className="board-quick-search">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={`Buscar ${itemName}...`}
+          />
+          {search && (
+            <button className="btn-icon" style={{ padding: 2 }} onClick={() => setSearch('')}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M18 6 6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="board-areas" ref={boardRef} onMouseDown={handleBoardMouseDown} style={!hasAnyAccess ? { display: 'none' } : {}}>
         <div className="board-row" ref={rowRef}>
@@ -768,6 +809,19 @@ export default function Board() {
           </div>
         </div>,
         document.body
+      )}
+
+      {defaultEntryOpen && company && (
+        <DefaultEntryModal
+          company={company}
+          currentColumnId={defaultColumnId}
+          warningMsg={defaultEntryWarning}
+          onClose={() => { setDefaultEntryOpen(false); setDefaultEntryWarning('') }}
+          onSaved={(id) => {
+            updateDefaultColumnId(id)
+            if (defaultEntryWarning) handleAddCard(id)
+          }}
+        />
       )}
     </Layout>
   )
