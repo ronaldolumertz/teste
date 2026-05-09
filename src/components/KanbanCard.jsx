@@ -103,7 +103,7 @@ export default function KanbanCard({
       className={`card${dragging ? ' dragging' : ''}`}
       style={rule ? { borderLeft: `3px solid ${rule.color}` } : undefined}
       draggable={canEdit}
-      onDragStart={e => { e.dataTransfer.setData('cardId', card.id); onDragStart(card.id) }}
+      onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData('cardId', card.id); onDragStart(card.id) }}
       onDragEnd={onDragEnd}
       onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
       onClick={handleClick}
