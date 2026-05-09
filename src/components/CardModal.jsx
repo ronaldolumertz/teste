@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
+import { normalizeItemFields, FIELD_TYPES } from './ItemFieldsModal'
 
 const TAGS       = ['hot', 'warm', 'cold', 'vip', 'new']
 const PRIORITIES = [
@@ -37,14 +38,15 @@ function FileIcon({ type = '' }) {
   )
 }
 
-const DEFAULT_ITEM_FIELDS = {
-  company_name: true, email: true, phone: true, priority: true,
-  column_id: true, tags: true, notes: true, products: true,
-}
-
 export default function CardModal({ card, columns, canEdit, itemFields: rawItemFields, onSave, onDelete, onClose }) {
-  const itemFields = { ...DEFAULT_ITEM_FIELDS, ...(rawItemFields || {}) }
-  const [form, setForm]             = useState({ ...card })
+  const fieldList = normalizeItemFields(rawItemFields)
+  const isEnabled = (key) => {
+    const f = fieldList.find(ff => ff.key === key || ff.id === key)
+    return f ? f.enabled : false
+  }
+  const customFields = fieldList.filter(f => !f.builtin && f.enabled)
+
+  const [form, setForm] = useState({ ...card, custom_fields: card.custom_fields || {} })
   const [products, setProducts]     = useState([])
   const [cardProds, setCardProds]   = useState([])
   const [addForm, setAddForm]       = useState(null)
@@ -204,7 +206,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
               <input ref={nameRef} className="field-input" value={form.name}
                 onChange={e => set('name', e.target.value)} placeholder="Nome completo" readOnly={!canEdit} />
             </div>
-            {itemFields.company_name && (
+            {isEnabled("company_name") && (
               <div className="field">
                 <label>Empresa</label>
                 <input className="field-input" value={form.company_name || ''}
@@ -213,16 +215,16 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
             )}
           </div>
 
-          {(itemFields.email || itemFields.phone) && (
+          {(isEnabled("email") || isEnabled("phone")) && (
             <div className="field-row">
-              {itemFields.email && (
+              {isEnabled("email") && (
                 <div className="field">
                   <label>E-mail</label>
                   <input className="field-input" type="email" value={form.email || ''}
                     onChange={e => set('email', e.target.value)} placeholder="email@exemplo.com" readOnly={!canEdit} />
                 </div>
               )}
-              {itemFields.phone && (
+              {isEnabled("phone") && (
                 <div className="field">
                   <label>Telefone</label>
                   <input className="field-input" value={form.phone || ''}
@@ -232,9 +234,9 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
             </div>
           )}
 
-          {(itemFields.priority || itemFields.column_id) && (
+          {(isEnabled("priority") || isEnabled("column_id")) && (
             <div className="field-row">
-              {itemFields.priority && (
+              {isEnabled("priority") && (
                 <div className="field">
                   <label>Prioridade</label>
                   <select className="field-input" value={form.priority}
@@ -243,7 +245,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
                   </select>
                 </div>
               )}
-              {itemFields.column_id && (
+              {isEnabled("column_id") && (
                 <div className="field">
                   <label>Coluna / Estágio</label>
                   <select className="field-input" value={form.column_id}
@@ -255,7 +257,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
             </div>
           )}
 
-          {itemFields.tags && (
+          {isEnabled("tags") && (
             <div className="field">
               <label>Tags</label>
               <div className="tags-editor">
@@ -271,7 +273,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
             </div>
           )}
 
-          {itemFields.notes && (
+          {isEnabled("notes") && (
             <div className="field">
               <label>Anotações</label>
               <textarea className="field-input" value={form.notes || ''}
@@ -280,7 +282,44 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
             </div>
           )}
 
-          {itemFields.products && <div className="cp-section">
+          {customFields.length > 0 && (
+            <div className="custom-fields-section">
+              {customFields.map(f => {
+                const val = form.custom_fields?.[f.id] ?? ''
+                const setVal = v => setForm(prev => ({ ...prev, custom_fields: { ...prev.custom_fields, [f.id]: v } }))
+                return (
+                  <div key={f.id} className="field">
+                    <label>{f.label}{f.required && <span style={{ color: 'var(--danger)', marginLeft: 2 }}>*</span>}</label>
+                    {f.type === 'textarea' ? (
+                      <textarea className="field-input" value={val} onChange={e => setVal(e.target.value)}
+                        rows={3} readOnly={!canEdit} placeholder={f.label} />
+                    ) : f.type === 'checkbox' ? (
+                      <label className="field-checkbox">
+                        <input type="checkbox" checked={!!val} onChange={e => setVal(e.target.checked)} disabled={!canEdit} />
+                        <span>{f.label}</span>
+                      </label>
+                    ) : f.type === 'select' ? (
+                      <select className="field-input" value={val} onChange={e => setVal(e.target.value)} disabled={!canEdit}>
+                        <option value="">Selecionar…</option>
+                        {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        className="field-input"
+                        type={f.type === 'date' ? 'date' : f.type === 'number' || f.type === 'currency' ? 'number' : f.type === 'email' ? 'email' : 'text'}
+                        value={val}
+                        onChange={e => setVal(e.target.value)}
+                        readOnly={!canEdit}
+                        placeholder={f.label}
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {isEnabled("products") && <div className="cp-section">
             <div className="cp-section-header">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>

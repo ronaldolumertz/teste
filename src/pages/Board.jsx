@@ -6,7 +6,6 @@ import Layout from '../components/Layout'
 import KanbanColumn from '../components/KanbanColumn'
 import CardModal from '../components/CardModal'
 import ColumnModal from '../components/ColumnModal'
-import { DEFAULT_ITEM_FIELDS } from '../components/ItemFieldsModal'
 
 const COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#22c55e','#14b8a6','#38bdf8','#64748b','#a855f7']
 
@@ -626,7 +625,7 @@ export default function Board() {
           card={editingCard}
           columns={columns}
           canEdit={canEditColumn(editingCard.column_id)}
-          itemFields={{ ...DEFAULT_ITEM_FIELDS, ...(company.item_fields || JSON.parse(localStorage.getItem(`item_fields_${company.id}`) || 'null') || {}) }}
+          itemFields={company.item_fields || JSON.parse(localStorage.getItem(`item_fields_${company.id}`) || 'null') || null}
           onSave={handleSaveCard}
           onDelete={handleDeleteCard}
           onClose={() => setEditingCard(null)}
