@@ -3,24 +3,11 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
-const PROFILE_CACHE_KEY = 'cache_profile_v1'
-const COMPANY_CACHE_KEY = 'cache_company_v1'
-
-function loadCache(key) {
-  try { return JSON.parse(localStorage.getItem(key) || 'null') }
-  catch { return null }
-}
-
-function clearCache() {
-  localStorage.removeItem(PROFILE_CACHE_KEY)
-  localStorage.removeItem(COMPANY_CACHE_KEY)
-}
-
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null)
-  const [profile, setProfile] = useState(() => loadCache(PROFILE_CACHE_KEY))
-  const [company, setCompany] = useState(() => loadCache(COMPANY_CACHE_KEY))
-  const [loading, setLoading] = useState(() => !loadCache(PROFILE_CACHE_KEY))
+  const [profile, setProfile] = useState(null)
+  const [company, setCompany] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   async function fetchProfile(uid) {
     const { data } = await supabase
@@ -31,14 +18,9 @@ export function AuthProvider({ children }) {
     if (data) {
       setProfile(data)
       setCompany(data.companies)
-      try {
-        localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(data))
-        localStorage.setItem(COMPANY_CACHE_KEY, JSON.stringify(data.companies))
-      } catch {}
     } else {
       setProfile(null)
       setCompany(null)
-      clearCache()
     }
     return data
   }
@@ -47,13 +29,7 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        const hasCached = !!loadCache(PROFILE_CACHE_KEY)
-        if (hasCached) {
-          setLoading(false)
-          fetchProfile(session.user.id)
-        } else {
-          fetchProfile(session.user.id).finally(() => setLoading(false))
-        }
+        fetchProfile(session.user.id).finally(() => setLoading(false))
       } else {
         setLoading(false)
       }
@@ -66,7 +42,6 @@ export function AuthProvider({ children }) {
       } else {
         setProfile(null)
         setCompany(null)
-        clearCache()
       }
     })
     return () => subscription.unsubscribe()
@@ -102,7 +77,6 @@ export function AuthProvider({ children }) {
     setUser(null)
     setProfile(null)
     setCompany(null)
-    clearCache()
   }
 
   const isAdmin      = profile?.role === 'owner' || profile?.role === 'admin'

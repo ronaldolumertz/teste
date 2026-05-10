@@ -1,11 +1,29 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 import { clientsClaim } from 'workbox-core'
+import { registerRoute } from 'workbox-routing'
+import { StaleWhileRevalidate } from 'workbox-strategies'
+import { CacheableResponsePlugin } from 'workbox-cacheable-response'
+import { ExpirationPlugin } from 'workbox-expiration'
 
 self.skipWaiting()
 clientsClaim()
 
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
+
+// Cache Supabase REST API profile+company reads with stale-while-revalidate.
+// First visit fetches from network. Return visits get instant cached response
+// while the background fetch silently refreshes the cache.
+registerRoute(
+  ({ url }) => url.hostname.endsWith('.supabase.co') && url.pathname.startsWith('/rest/v1/profiles'),
+  new StaleWhileRevalidate({
+    cacheName: 'supabase-profile-v1',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({ maxAgeSeconds: 60 * 60 * 24, maxEntries: 10 }),
+    ],
+  })
+)
 
 // ── Push notifications ─────────────────────────────────────
 self.addEventListener('push', event => {
