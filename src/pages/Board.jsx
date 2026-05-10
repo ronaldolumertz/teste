@@ -42,7 +42,7 @@ function fmtCurrency(v) {
 }
 
 export default function Board() {
-  const { profile, company, isAdmin, itemName, defaultColumnId, updateDefaultColumnId } = useAuth()
+  const { profile, company, isAdmin, itemName, defaultColumnId, updateDefaultColumnId, artColumnId } = useAuth()
 
   const [sectors, setSectors]           = useState([])
   const [columns, setColumns]           = useState([])
@@ -217,9 +217,11 @@ export default function Board() {
 
   const handleSaveCard = async (form) => {
     if (!form.id) {
+      const hasCustomizable = form._pendingProds?.some(pp => pp.customizable)
+      const targetColumnId = (hasCustomizable && artColumnId) ? artColumnId : form.column_id
       const { data: newCard, error: insertErr } = await supabase.from('cards').insert({
         company_id: company.id,
-        column_id: form.column_id,
+        column_id: targetColumnId,
         name: form.name,
         company_name: form.company_name,
         email: form.email,

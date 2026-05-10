@@ -98,6 +98,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
         width:  selectedProd.type === 'sqm' ? parseNum(addForm.width)  : null,
         height: selectedProd.type === 'sqm' ? parseNum(addForm.height) : null,
         total: addTotal,
+        customizable: selectedProd.customizable,
         customization_notes: selectedProd.customizable ? (addForm.customization_notes || '') : '',
         attachments: [],
       }

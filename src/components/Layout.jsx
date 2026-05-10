@@ -6,6 +6,7 @@ import ProfileModal from './ProfileModal'
 import ItemFieldsModal from './ItemFieldsModal'
 import ItemNameModal from './ItemNameModal'
 import DefaultEntryModal from './DefaultEntryModal'
+import ArtStageModal from './ArtStageModal'
 import { subscribePush, unsubscribePush, getNotificationPermission } from '../lib/push'
 
 function useTheme(userId) {
@@ -39,7 +40,7 @@ function useTheme(userId) {
 }
 
 export default function Layout({ children, stats, search, onSearch, onAddColumn }) {
-  const { profile, company, isAdmin, isSuperAdmin, signOut, updateCompany, itemName, updateItemName, defaultColumnId, updateDefaultColumnId } = useAuth()
+  const { profile, company, isAdmin, isSuperAdmin, signOut, updateCompany, itemName, updateItemName, defaultColumnId, updateDefaultColumnId, artColumnId, updateArtColumnId } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme(profile?.id)
@@ -48,6 +49,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const [itemFieldsOpen, setItemFieldsOpen]       = useState(false)
   const [itemNameOpen, setItemNameOpen]           = useState(false)
   const [defaultEntryOpen, setDefaultEntryOpen]   = useState(false)
+  const [artStageOpen, setArtStageOpen]             = useState(false)
   const [prodOpen, setProdOpen]             = useState(false)
   const prodRef = useRef(null)
   const [installPrompt, setInstallPrompt] = useState(() => window.__pwaPrompt ?? null)
@@ -252,6 +254,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
           onConfigureItemName={() => setItemNameOpen(true)}
           onConfigureItemFields={() => setItemFieldsOpen(true)}
           onConfigureDefaultEntry={() => setDefaultEntryOpen(true)}
+          onConfigureArtStage={() => setArtStageOpen(true)}
           onClose={() => setDrawerOpen(false)}
         />
       )}
@@ -281,6 +284,15 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
           company={company}
           onClose={() => setItemFieldsOpen(false)}
           onSaved={(fields) => updateCompany({ item_fields: fields })}
+        />
+      )}
+
+      {artStageOpen && company && (
+        <ArtStageModal
+          company={company}
+          currentColumnId={artColumnId}
+          onClose={() => setArtStageOpen(false)}
+          onSaved={(id) => { updateArtColumnId(id); setArtStageOpen(false) }}
         />
       )}
     </div>
