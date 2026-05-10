@@ -3,11 +3,18 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
+const COMPANY_CACHE_KEY = 'cache_company_v1'
+
+function loadCachedCompany() {
+  try { return JSON.parse(localStorage.getItem(COMPANY_CACHE_KEY) || 'null') }
+  catch { return null }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null)
   const [profile, setProfile] = useState(null)
-  const [company, setCompany] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [company, setCompany] = useState(() => loadCachedCompany())
+  const [loading, setLoading] = useState(() => !loadCachedCompany())
 
   async function fetchProfile(uid) {
     const { data } = await supabase
@@ -18,9 +25,11 @@ export function AuthProvider({ children }) {
     if (data) {
       setProfile(data)
       setCompany(data.companies)
+      try { localStorage.setItem(COMPANY_CACHE_KEY, JSON.stringify(data.companies)) } catch {}
     } else {
       setProfile(null)
       setCompany(null)
+      localStorage.removeItem(COMPANY_CACHE_KEY)
     }
     return data
   }
@@ -29,7 +38,13 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setLoading(false))
+        const hasCached = !!loadCachedCompany()
+        if (hasCached) {
+          setLoading(false)
+          fetchProfile(session.user.id)
+        } else {
+          fetchProfile(session.user.id).finally(() => setLoading(false))
+        }
       } else {
         setLoading(false)
       }
@@ -77,6 +92,7 @@ export function AuthProvider({ children }) {
     setUser(null)
     setProfile(null)
     setCompany(null)
+    localStorage.removeItem(COMPANY_CACHE_KEY)
   }
 
   const isAdmin      = profile?.role === 'owner' || profile?.role === 'admin'
