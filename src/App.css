@@ -472,8 +472,8 @@ select.field-input { cursor:pointer; appearance:none; background-image:url("data
 .sector-title { position:sticky; left:0; z-index:5; display:inline-block; font-size:12px; font-weight:800; color:var(--text); letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; background:var(--surface2); padding:2px 6px; border-radius:4px; margin:-2px -6px; }
 .sector-title-input { font-size:12px; font-weight:800; color:var(--text); letter-spacing:.06em; text-transform:uppercase; background:var(--surface); border:1px solid var(--accent); border-radius:4px; padding:2px 8px; outline:none; min-width:100px; }
 .sector-actions { flex-shrink:0; display:flex; align-items:center; gap:3px; }
-.sector-columns { display:flex; gap:12px; padding:12px; align-items:flex-start; flex:1; }
-.sector-columns .column { max-height:calc(100vh - 185px); }
+.sector-columns { display:flex; gap:12px; padding:12px; align-items:flex-start; flex:1; min-height:0; overflow-y:hidden; }
+.sector-columns .column { max-height:100%; }
 .sector-unsorted .sector-header { opacity:.6; }
 .sector-empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:40px 20px; color:var(--text-dim); font-size:13px; text-align:center; min-width:260px; }
 .board-empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; height:100%; padding:32px; text-align:center; }
