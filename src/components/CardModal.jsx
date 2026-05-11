@@ -59,6 +59,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
   const [saveError, setSaveError]   = useState('')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [removingId, setRemovingId] = useState(null)
+  const [fileWarning, setFileWarning] = useState('')
   const fileInputRef = useRef(null)
   const nameRef      = useRef(null)
   const isNew = !card.id
@@ -174,12 +175,27 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
 
   const handleFileChange = (e) => {
     const maxFiles = selectedProd?.max_attachments || 3
-    const maxSize  = 10 * 1024 * 1024 // 10 MB
-    const chosen   = Array.from(e.target.files)
-      .filter(f => f.size <= maxSize)
-      .slice(0, maxFiles)
-    setAddForm(f => ({ ...f, files: chosen }))
+    const maxSize  = 10 * 1024 * 1024
+    const existing = addForm?.files || []
+    const remaining = maxFiles - existing.length
+    setFileWarning('')
+
+    const picked    = Array.from(e.target.files)
+    const tooBig    = picked.filter(f => f.size > maxSize)
+    const validNew  = picked.filter(f => f.size <= maxSize)
+    const toAdd     = validNew.slice(0, remaining)
+    const discarded = picked.length - toAdd.length
+
+    setAddForm(f => ({ ...f, files: [...existing, ...toAdd] }))
     e.target.value = ''
+
+    if (tooBig.length > 0 && discarded - tooBig.length > 0) {
+      setFileWarning(`${tooBig.length} arquivo(s) ignorado(s) por ultrapassar 10 MB e ${discarded - tooBig.length} ignorado(s) pelo limite de ${maxFiles} anexos.`)
+    } else if (tooBig.length > 0) {
+      setFileWarning(`${tooBig.length} arquivo(s) ignorado(s): tamanho acima de 10 MB.`)
+    } else if (discarded > 0) {
+      setFileWarning(`Limite de ${maxFiles} anexo(s) atingido. ${discarded} arquivo(s) não foram adicionados.`)
+    }
   }
 
   const handleSave = async () => {
@@ -510,19 +526,23 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
                             onChange={handleFileChange}
                             style={{ display: 'none' }} />
 
-                          {addForm.files.length < selectedProd.max_attachments && (
-                            <button type="button" className="cp-file-btn"
-                              onClick={() => fileInputRef.current?.click()}>
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="17 8 12 3 7 8"/>
-                                <line x1="12" y1="3" x2="12" y2="15"/>
-                              </svg>
-                              Anexar arquivo{selectedProd.max_attachments > 1 ? 's' : ''}
-                              <span className="cp-file-limit">
-                                {addForm.files.length}/{selectedProd.max_attachments} · máx. 10 MB cada
-                              </span>
-                            </button>
+                          <button type="button" className="cp-file-btn"
+                            onClick={() => { if (addForm.files.length < selectedProd.max_attachments) fileInputRef.current?.click() }}
+                            disabled={addForm.files.length >= selectedProd.max_attachments}
+                            style={ addForm.files.length >= selectedProd.max_attachments ? { opacity: .5, cursor: 'not-allowed' } : {} }>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <polyline points="17 8 12 3 7 8"/>
+                              <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            Anexar arquivo{selectedProd.max_attachments > 1 ? 's' : ''}
+                            <span className="cp-file-limit">
+                              {addForm.files.length}/{selectedProd.max_attachments} · máx. 10 MB cada
+                            </span>
+                          </button>
+
+                          {fileWarning && (
+                            <p style={{ fontSize: 11, color: 'var(--danger)', marginTop: 4 }}>{fileWarning}</p>
                           )}
 
                           {addForm.files.length > 0 && (
@@ -533,7 +553,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
                                   <span className="cp-file-name">{f.name}</span>
                                   <span className="cp-file-size">{fmtSize(f.size)}</span>
                                   <button className="btn-icon danger"
-                                    onClick={() => setAddForm(ff => ({ ...ff, files: ff.files.filter((_, j) => j !== i) }))}>
+                                    onClick={() => { setFileWarning(''); setAddForm(ff => ({ ...ff, files: ff.files.filter((_, j) => j !== i) })) }}>
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                       <path d="M18 6 6 18M6 6l12 12"/>
                                     </svg>
