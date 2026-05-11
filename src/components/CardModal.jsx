@@ -44,6 +44,10 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
     const f = fieldList.find(ff => ff.key === key || ff.id === key)
     return f ? f.enabled : false
   }
+  const isRequired = (key) => {
+    const f = fieldList.find(ff => ff.key === key || ff.id === key)
+    return f ? (f.enabled && !!f.required) : false
+  }
   const customFields = fieldList.filter(f => !f.builtin && f.enabled)
 
   const [form, setForm] = useState({ ...card, custom_fields: card.custom_fields || {} })
@@ -179,6 +183,10 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
 
   const handleSave = async () => {
     if (saving || !form.name?.trim()) return
+    if (isRequired('products') && cardProds.length === 0) {
+      setSaveError('O campo Produtos é obrigatório. Adicione pelo menos um produto antes de salvar.')
+      return
+    }
     setSaving(true)
     setSaveError('')
     try {
@@ -335,7 +343,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
               </svg>
-              <span>Produtos</span>
+              <span>Produtos{isRequired('products') && <span style={{ color: 'var(--danger)', marginLeft: 2 }}>*</span>}</span>
               {grandTotal > 0 && <span className="cp-total-badge">{fmt(grandTotal)}</span>}
             </div>
 
