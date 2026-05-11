@@ -38,7 +38,9 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfile(session.user.id)
+        fetchProfile(session.user.id).then(p => {
+          if (!p) supabase.auth.signOut()
+        })
       } else {
         setProfile(null)
         setCompany(null)
@@ -68,7 +70,11 @@ export function AuthProvider({ children }) {
   async function signIn({ email, password }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
-    await fetchProfile(data.user.id)
+    const profileData = await fetchProfile(data.user.id)
+    if (!profileData) {
+      await supabase.auth.signOut()
+      throw new Error('Usuário não encontrado ou removido. Entre em contato com o administrador.')
+    }
     return data
   }
 

@@ -21,16 +21,16 @@ function Spinner() {
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user, profile, loading } = useAuth()
-  if (loading || (user && !profile)) return <Spinner />
-  if (!user) return <Navigate to="/login" replace />
-  if (adminOnly && profile && !['owner','admin'].includes(profile.role)) return <Navigate to="/app" replace />
+  if (loading) return <Spinner />
+  if (!user || !profile) return <Navigate to="/login" replace />
+  if (adminOnly && !['owner','admin'].includes(profile.role)) return <Navigate to="/app" replace />
   return children
 }
 
 function SuperAdminRoute({ children }) {
   const { user, profile, loading, isSuperAdmin } = useAuth()
-  if (loading || (user && !profile)) return <Spinner />
-  if (!user) return <Navigate to="/login" replace />
+  if (loading) return <Spinner />
+  if (!user || !profile) return <Navigate to="/login" replace />
   if (!isSuperAdmin) return <Navigate to="/app" replace />
   return children
 }
