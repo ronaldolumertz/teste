@@ -15,7 +15,14 @@ export default function DefaultEntryModal({ company, currentColumnId, warningMsg
         supabase.from('columns').select('*').eq('company_id', company.id).order('position'),
         supabase.from('sectors').select('*').eq('company_id', company.id).order('position'),
       ])
-      setColumns(cols || [])
+      const sectorPos = Object.fromEntries((sects || []).map(s => [s.id, s.position ?? 0]))
+      const sorted = (cols || []).slice().sort((a, b) => {
+        const as = a.sector_id != null ? (sectorPos[a.sector_id] ?? 999) : 999
+        const bs = b.sector_id != null ? (sectorPos[b.sector_id] ?? 999) : 999
+        if (as !== bs) return as - bs
+        return (a.position ?? 0) - (b.position ?? 0)
+      })
+      setColumns(sorted)
       setSectors(sects || [])
       setLoading(false)
     }
