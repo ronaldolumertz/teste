@@ -16,12 +16,20 @@ export default function AdminCompanyDetail() {
   useEffect(() => {
     Promise.all([
       supabase.from('companies').select('*').eq('id', id).single(),
-      supabase.from('columns').select('*').eq('company_id', id).order('position'),
+      supabase.from('sectors').select('id, position').eq('company_id', id),
+      supabase.from('columns').select('*').eq('company_id', id),
       supabase.from('cards').select('id, name, value, column_id, created_at').eq('company_id', id),
       supabase.from('profiles').select('*').eq('company_id', id).order('role'),
       supabase.from('products').select('id, name, type, price, active').eq('company_id', id).order('name'),
-    ]).then(([{ data: company }, { data: cols }, { data: cards }, { data: members }, { data: products }]) => {
-      setInfo({ company, cols: cols||[], cards: cards||[], members: members||[], products: products||[] })
+    ]).then(([{ data: company }, { data: sects }, { data: rawCols }, { data: cards }, { data: members }, { data: products }]) => {
+      const sectorPos = Object.fromEntries((sects || []).map(s => [s.id, s.position ?? 0]))
+      const cols = (rawCols || []).slice().sort((a, b) => {
+        const as = a.sector_id != null ? (sectorPos[a.sector_id] ?? 999) : 999
+        const bs = b.sector_id != null ? (sectorPos[b.sector_id] ?? 999) : 999
+        if (as !== bs) return as - bs
+        return (a.position ?? 0) - (b.position ?? 0)
+      })
+      setInfo({ company, cols, cards: cards||[], members: members||[], products: products||[] })
       setLoading(false)
     })
   }, [id])
