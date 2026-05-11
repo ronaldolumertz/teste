@@ -104,6 +104,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
         total: addTotal,
         customizable: selectedProd.customizable,
         customization_notes: selectedProd.customizable ? (addForm.customization_notes || '') : '',
+        files: addForm.files || [],
         attachments: [],
       }
       setCardProds(prev => [...prev, pending])
@@ -503,12 +504,6 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
                           onChange={e => setAddForm(f => ({ ...f, customization_notes: e.target.value }))}
                           placeholder="Descreva como quer a personalização: cores, texto, tamanho, arte…" />
 
-                        {/* Upload de arquivos — só disponível após salvar o item */}
-                        {isNew ? (
-                          <p style={{ fontSize:12, color:'var(--text-dim)', marginTop:4 }}>
-                            Salve o item primeiro para anexar arquivos.
-                          </p>
-                        ) : (
                         <div className="cp-file-area">
                           <input ref={fileInputRef} type="file" multiple
                             accept="image/*,.pdf,.ai,.psd,.eps,.svg"
@@ -548,7 +543,6 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
                             </div>
                           )}
                         </div>
-                        )}
                       </div>
                     )}
                   </>

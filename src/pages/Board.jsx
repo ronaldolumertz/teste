@@ -234,15 +234,24 @@ export default function Board() {
       }).select().single()
       if (insertErr) throw insertErr
       if (newCard && form._pendingProds?.length > 0) {
-        const results = await Promise.all(form._pendingProds.map(pp =>
-          supabase.from('card_products').insert({
+        const results = await Promise.all(form._pendingProds.map(async pp => {
+          let attachments = []
+          if (pp.files?.length > 0) {
+            for (const file of pp.files) {
+              const safeName = file.name.replace(/[^a-z0-9._-]/gi, '_')
+              const path = `${newCard.id}/${Date.now()}_${safeName}`
+              const { error: upErr } = await supabase.storage.from('card-attachments').upload(path, file)
+              if (!upErr) attachments.push({ name: file.name, path, size: file.size, type: file.type })
+            }
+          }
+          return supabase.from('card_products').insert({
             card_id: newCard.id, product_id: pp.product_id,
             product_name: pp.product_name, product_type: pp.product_type,
             unit_price: pp.unit_price, quantity: pp.quantity,
             width: pp.width, height: pp.height, total: pp.total,
-            customization_notes: pp.customization_notes || '', attachments: [],
+            customization_notes: pp.customization_notes || '', attachments,
           })
-        ))
+        }))
         const prodErr = results.find(r => r.error)?.error
         if (prodErr) throw prodErr
         const totalValue = form._pendingProds.reduce((s, pp) => s + Number(pp.total), 0)
