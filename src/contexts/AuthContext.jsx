@@ -69,22 +69,11 @@ export function AuthProvider({ children }) {
   }
 
   async function signIn({ email, password }) {
-    // Check if email is registered (best-effort — degrades if RLS blocks anon query)
-    const { data: emailRow, error: rlsErr } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email.trim().toLowerCase())
-      .maybeSingle()
-
-    if (!rlsErr && emailRow === null) {
-      throw new Error('E-mail não cadastrado no sistema. Verifique e tente novamente.')
-    }
-
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       const msg = error.message?.toLowerCase() || ''
       if (msg.includes('invalid') || msg.includes('credentials') || msg.includes('not found')) {
-        throw new Error('Senha incorreta. Verifique e tente novamente.')
+        throw new Error('E-mail ou senha incorretos. Verifique os dados e tente novamente.')
       }
       if (msg.includes('email not confirmed')) {
         throw new Error('E-mail não confirmado. Verifique sua caixa de entrada.')
