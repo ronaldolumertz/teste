@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { normalizeItemFields, FIELD_TYPES } from './ItemFieldsModal'
+import { useAuth } from '../contexts/AuthContext'
 
 const TAGS       = ['hot', 'warm', 'cold', 'vip', 'new']
 const PRIORITIES = [
@@ -39,10 +40,12 @@ function FileIcon({ type = '' }) {
 }
 
 export default function CardModal({ card, columns, canEdit, itemFields: rawItemFields, itemName = 'Item', onSave, onDelete, onClose }) {
+  const { profile } = useAuth()
   const fieldList = normalizeItemFields(rawItemFields)
   const isEnabled = (key) => {
     const f = fieldList.find(ff => ff.key === key || ff.id === key)
-    return f ? f.enabled : false
+    if (!f) return key === 'name' ? true : false
+    return f.enabled
   }
   const isRequired = (key) => {
     const f = fieldList.find(ff => ff.key === key || ff.id === key)
@@ -50,7 +53,11 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
   }
   const customFields = fieldList.filter(f => !f.builtin && f.enabled)
 
-  const [form, setForm] = useState({ ...card, custom_fields: card.custom_fields || {} })
+  const [form, setForm] = useState({
+    ...card,
+    name: !card.id ? (profile?.name || card.name || '') : (card.name || ''),
+    custom_fields: card.custom_fields || {},
+  })
   const [products, setProducts]     = useState([])
   const [cardProds, setCardProds]   = useState([])
   const [addForm, setAddForm]       = useState(null)
@@ -61,10 +68,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
   const [removingId, setRemovingId] = useState(null)
   const [fileWarning, setFileWarning] = useState('')
   const fileInputRef = useRef(null)
-  const nameRef      = useRef(null)
   const isNew = !card.id
-
-  useEffect(() => { nameRef.current?.focus(); nameRef.current?.select() }, [])
 
   useEffect(() => {
     supabase.from('products').select('*').eq('active', true).order('name').then(({ data }) => {
@@ -236,20 +240,25 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
         </div>
 
         <div className="modal-body">
-          <div className="field-row">
-            <div className="field">
-              <label>Nome *</label>
-              <input ref={nameRef} className="field-input" value={form.name}
-                onChange={e => set('name', e.target.value)} placeholder="Nome completo" readOnly={!canEdit} />
+          {(isEnabled("name") || isEnabled("company_name")) && (
+            <div className="field-row">
+              {isEnabled("name") && (
+                <div className="field">
+                  <label>Nome</label>
+                  <input className="field-input" value={form.name || ''}
+                    readOnly placeholder="Nome completo"
+                    style={{ background: 'var(--bg-dim, #f5f5f5)', cursor: 'default', color: 'var(--text-dim)' }} />
+                </div>
+              )}
+              {isEnabled("company_name") && (
+                <div className="field">
+                  <label>Empresa</label>
+                  <input className="field-input" value={form.company_name || ''}
+                    onChange={e => set('company_name', e.target.value)} placeholder="Nome da empresa" readOnly={!canEdit} />
+                </div>
+              )}
             </div>
-            {isEnabled("company_name") && (
-              <div className="field">
-                <label>Empresa</label>
-                <input className="field-input" value={form.company_name || ''}
-                  onChange={e => set('company_name', e.target.value)} placeholder="Nome da empresa" readOnly={!canEdit} />
-              </div>
-            )}
-          </div>
+          )}
 
           {(isEnabled("email") || isEnabled("phone")) && (
             <div className="field-row">

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 
 const BUILTIN_FIELDS = [
+  { id: 'name',        label: 'Nome',             type: 'text',     key: 'name' },
   { id: 'company_name', label: 'Empresa',         type: 'text',     key: 'company_name' },
   { id: 'email',        label: 'E-mail',           type: 'email',    key: 'email' },
   { id: 'phone',        label: 'Telefone',         type: 'phone',    key: 'phone' },
