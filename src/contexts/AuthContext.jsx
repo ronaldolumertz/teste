@@ -69,12 +69,36 @@ export function AuthProvider({ children }) {
   }
 
   async function signIn({ email, password }) {
+    // Check if email is registered (best-effort — degrades if RLS blocks anon query)
+    const { data: emailRow, error: rlsErr } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email.trim().toLowerCase())
+      .maybeSingle()
+
+    if (!rlsErr && emailRow === null) {
+      throw new Error('E-mail não cadastrado no sistema. Verifique e tente novamente.')
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
+    if (error) {
+      const msg = error.message?.toLowerCase() || ''
+      if (msg.includes('invalid') || msg.includes('credentials') || msg.includes('not found')) {
+        throw new Error('Senha incorreta. Verifique e tente novamente.')
+      }
+      if (msg.includes('email not confirmed')) {
+        throw new Error('E-mail não confirmado. Verifique sua caixa de entrada.')
+      }
+      if (msg.includes('too many') || msg.includes('rate')) {
+        throw new Error('Muitas tentativas. Aguarde alguns minutos e tente novamente.')
+      }
+      throw new Error('Erro ao entrar. Verifique sua conexão e tente novamente.')
+    }
+
     const profileData = await fetchProfile(data.user.id)
     if (!profileData) {
       await supabase.auth.signOut()
-      throw new Error('Usuário não encontrado ou removido. Entre em contato com o administrador.')
+      throw new Error('Usuário removido do sistema. Entre em contato com o administrador.')
     }
     setUser(data.user)
     return data
