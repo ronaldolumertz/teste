@@ -193,7 +193,7 @@ export default function Board() {
       _isNew: true,
       company_id: company.id,
       column_id: columnId,
-      name: `Novo ${itemName}`,
+      name: '',
       position: maxPos + 100,
       tags: [],
       priority: 'medium',

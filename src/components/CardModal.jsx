@@ -44,8 +44,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
   const fieldList = normalizeItemFields(rawItemFields)
   const isEnabled = (key) => {
     const f = fieldList.find(ff => ff.key === key || ff.id === key)
-    if (!f) return key === 'name' ? true : false
-    return f.enabled
+    return f ? f.enabled : false
   }
   const isRequired = (key) => {
     const f = fieldList.find(ff => ff.key === key || ff.id === key)
@@ -199,7 +198,11 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
   }
 
   const handleSave = async () => {
-    if (saving || !form.name?.trim()) return
+    if (saving) return
+    if (isEnabled('name') && isRequired('name') && !form.name?.trim()) {
+      setSaveError('O campo Nome é obrigatório.')
+      return
+    }
     if (isRequired('products') && cardProds.length === 0) {
       setSaveError('O campo Produtos é obrigatório. Adicione pelo menos um produto antes de salvar.')
       return

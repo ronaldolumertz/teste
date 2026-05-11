@@ -34,7 +34,18 @@ export const DEFAULT_ITEM_FIELDS = BUILTIN_FIELDS.map((f, i) => ({
 
 export function normalizeItemFields(raw) {
   if (!raw) return DEFAULT_ITEM_FIELDS
-  if (Array.isArray(raw)) return raw
+  if (Array.isArray(raw)) {
+    // Prepend any BUILTIN_FIELDS missing from the saved config (e.g. newly added builtins)
+    const existingIds = new Set(raw.map(f => f.id))
+    const missing = BUILTIN_FIELDS
+      .filter(f => !existingIds.has(f.id))
+      .map(f => ({
+        id: f.id, label: f.label, type: f.type, key: f.id,
+        enabled: true, required: false, showInCard: false, showOnlyWhenOpen: false,
+        builtin: true,
+      }))
+    return [...missing, ...raw].map((f, i) => ({ ...f, order: i }))
+  }
   // Old boolean format: { company_name: true, email: false, ... }
   return BUILTIN_FIELDS.map((f, i) => ({
     id: f.id, label: f.label, type: f.type, key: f.id,
@@ -121,7 +132,7 @@ export default function ItemFieldsModal({ company, onClose, onSaved }) {
 
         <div className="modal-body">
           <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 10 }}>
-            Configure os campos ao criar ou editar um item. <strong>Nome</strong> é sempre obrigatório.
+            Configure os campos ao criar ou editar um item.
           </p>
 
           <div className="item-fields-list">
