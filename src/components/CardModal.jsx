@@ -53,11 +53,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
   }
   const customFields = fieldList.filter(f => !f.builtin && f.enabled)
 
-  const [form, setForm] = useState({
-    ...card,
-    name: !card.id ? (profile?.name || card.name || '') : (card.name || ''),
-    custom_fields: card.custom_fields || {},
-  })
+  const [form, setForm] = useState({ ...card, custom_fields: card.custom_fields || {} })
   const [products, setProducts]     = useState([])
   const [cardProds, setCardProds]   = useState([])
   const [addForm, setAddForm]       = useState(null)
@@ -240,14 +236,22 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
         </div>
 
         <div className="modal-body">
+          {profile?.name && (
+            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span>Responsável: <strong>{profile.name}</strong></span>
+            </div>
+          )}
+
           {(isEnabled("name") || isEnabled("company_name")) && (
             <div className="field-row">
               {isEnabled("name") && (
                 <div className="field">
-                  <label>Nome</label>
+                  <label>Nome{isRequired('name') && <span style={{ color: 'var(--danger)', marginLeft: 2 }}>*</span>}</label>
                   <input className="field-input" value={form.name || ''}
-                    readOnly placeholder="Nome completo"
-                    style={{ background: 'var(--bg-dim, #f5f5f5)', cursor: 'default', color: 'var(--text-dim)' }} />
+                    onChange={e => set('name', e.target.value)} placeholder="Nome do cliente" readOnly={!canEdit} />
                 </div>
               )}
               {isEnabled("company_name") && (
