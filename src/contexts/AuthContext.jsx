@@ -26,22 +26,23 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
+    // On initial load, only set user if profile exists
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setLoading(false))
-      } else {
-        setLoading(false)
+        const p = await fetchProfile(session.user.id)
+        if (p) {
+          setUser(session.user)
+        } else {
+          await supabase.auth.signOut()
+        }
       }
+      setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id).then(p => {
-          if (!p) supabase.auth.signOut()
-        })
-      } else {
+    // Only react to sign-out events here — sign-in is handled inside signIn/signUp
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        setUser(null)
         setProfile(null)
         setCompany(null)
       }
@@ -53,7 +54,6 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
 
-    // Register company via RPC (security definer bypasses RLS)
     const { error: rpcErr } = await supabase.rpc('register_company', {
       p_company_name: companyName,
       p_user_name: name,
@@ -64,6 +64,7 @@ export function AuthProvider({ children }) {
       throw rpcErr
     }
     await fetchProfile(data.user.id)
+    setUser(data.user)
     return data
   }
 
@@ -75,6 +76,7 @@ export function AuthProvider({ children }) {
       await supabase.auth.signOut()
       throw new Error('Usuário não encontrado ou removido. Entre em contato com o administrador.')
     }
+    setUser(data.user)
     return data
   }
 
