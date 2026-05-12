@@ -61,6 +61,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
   const [saveError, setSaveError]   = useState('')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [removingId, setRemovingId] = useState(null)
+  const [editingCpId, setEditingCpId] = useState(null)
   const [fileWarning, setFileWarning] = useState('')
   const fileInputRef = useRef(null)
   const isNew = !card.id
@@ -89,11 +90,29 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
     customization_notes: '', files: [],
   })
 
+  const handleEditProduct = (cp) => {
+    if (cp._pending) {
+      setCardProds(prev => prev.filter(c => c.id !== cp.id))
+      setEditingCpId(null)
+    } else {
+      setEditingCpId(cp.id)
+    }
+    setAddForm({
+      productId: cp.product_id,
+      qty: String(cp.quantity),
+      width:  cp.width  != null ? String(cp.width)  : '',
+      height: cp.height != null ? String(cp.height) : '',
+      customization_notes: cp.customization_notes || '',
+      files: cp._pending ? (cp.files || []) : [],
+      _existingAttachments: cp._pending ? [] : (cp.attachments || []),
+    })
+  }
+
   const handleAddProduct = async () => {
     if (!selectedProd) return
 
     if (isNew) {
-      // New card — add to pending state, no DB yet
+      // New card — add/update pending state, no DB yet
       const pending = {
         id: crypto.randomUUID(), _pending: true,
         product_id: selectedProd.id, product_name: selectedProd.name,
@@ -115,7 +134,8 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
     setAdding(true)
     setUploadProgress(0)
 
-    let attachments = []
+    // Keep existing attachments, upload any new files
+    let attachments = [...(addForm._existingAttachments || [])]
     const files = addForm.files || []
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
@@ -126,8 +146,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
       setUploadProgress(Math.round(((i + 1) / files.length) * 100))
     }
 
-    const item = {
-      card_id:             card.id,
+    const fields = {
       product_id:          selectedProd.id,
       product_name:        selectedProd.name,
       product_type:        selectedProd.type,
@@ -140,11 +159,23 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
       attachments,
     }
 
-    const { data, error } = await supabase.from('card_products').insert(item).select().single()
-    if (!error && data) {
-      const next = [...cardProds, data]
-      setCardProds(next)
-      await supabase.from('cards').update({ value: next.reduce((s, cp) => s + Number(cp.total), 0) }).eq('id', card.id)
+    if (editingCpId) {
+      // Update existing product record
+      const { data, error } = await supabase.from('card_products').update(fields).eq('id', editingCpId).select().single()
+      if (!error && data) {
+        const next = cardProds.map(cp => cp.id === editingCpId ? data : cp)
+        setCardProds(next)
+        await supabase.from('cards').update({ value: next.reduce((s, cp) => s + Number(cp.total), 0) }).eq('id', card.id)
+      }
+      setEditingCpId(null)
+    } else {
+      // Insert new product
+      const { data, error } = await supabase.from('card_products').insert({ card_id: card.id, ...fields }).select().single()
+      if (!error && data) {
+        const next = [...cardProds, data]
+        setCardProds(next)
+        await supabase.from('cards').update({ value: next.reduce((s, cp) => s + Number(cp.total), 0) }).eq('id', card.id)
+      }
     }
     setAddForm(null)
     setAdding(false)
@@ -418,16 +449,25 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
                             {' · '}{fmt(cp.unit_price)}/{cp.product_type === 'sqm' ? 'm²' : 'un'}
                           </span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <span className="cp-item-total">{fmt(cp.total)}</span>
                           {canEdit && (
-                            <button className="btn-icon danger" onClick={() => handleRemoveProduct(cp.id)}
-                              disabled={removingId === cp.id} title="Remover" style={{ flexShrink: 0 }}>
-                              {removingId === cp.id
-                                ? <div className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} />
-                                : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                              }
-                            </button>
+                            <>
+                              <button className="btn-icon" onClick={() => handleEditProduct(cp)}
+                                disabled={!!addForm} title="Editar" style={{ flexShrink: 0 }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                              </button>
+                              <button className="btn-icon danger" onClick={() => handleRemoveProduct(cp.id)}
+                                disabled={removingId === cp.id || !!addForm} title="Remover" style={{ flexShrink: 0 }}>
+                                {removingId === cp.id
+                                  ? <div className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} />
+                                  : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                                }
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -608,12 +648,18 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
                   </div>
                 )}
 
+                {addForm._existingAttachments?.length > 0 && (
+                  <div style={{ fontSize: 11, color: 'var(--text-dim)', padding: '4px 0' }}>
+                    {addForm._existingAttachments.length} anexo(s) existente(s) mantido(s)
+                  </div>
+                )}
+
                 <div className="cp-form-actions">
-                  <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setAddForm(null)}>Cancelar</button>
+                  <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { setAddForm(null); setEditingCpId(null) }}>Cancelar</button>
                   <button className="btn btn-primary" style={{ flex: 1 }}
                     onClick={handleAddProduct}
                     disabled={adding || !selectedProd || addTotal === 0}>
-                    {adding ? 'Adicionando…' : 'Adicionar'}
+                    {adding ? (editingCpId ? 'Salvando…' : 'Adicionando…') : (editingCpId ? 'Salvar alterações' : 'Adicionar')}
                   </button>
                 </div>
               </div>
