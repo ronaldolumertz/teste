@@ -7,6 +7,7 @@ import ItemFieldsModal from './ItemFieldsModal'
 import ItemNameModal from './ItemNameModal'
 import DefaultEntryModal from './DefaultEntryModal'
 import ArtStageModal from './ArtStageModal'
+import NumberingModal from './NumberingModal'
 import { subscribePush, unsubscribePush, getNotificationPermission } from '../lib/push'
 
 function useTheme(userId) {
@@ -50,6 +51,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const [itemNameOpen, setItemNameOpen]           = useState(false)
   const [defaultEntryOpen, setDefaultEntryOpen]   = useState(false)
   const [artStageOpen, setArtStageOpen]             = useState(false)
+  const [numberingOpen, setNumberingOpen]           = useState(false)
   const [prodOpen, setProdOpen]             = useState(false)
   const prodRef = useRef(null)
   const [installPrompt, setInstallPrompt] = useState(() => window.__pwaPrompt ?? null)
@@ -255,6 +257,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
           onConfigureItemFields={() => setItemFieldsOpen(true)}
           onConfigureDefaultEntry={() => setDefaultEntryOpen(true)}
           onConfigureArtStage={() => setArtStageOpen(true)}
+          onConfigureNumbering={() => setNumberingOpen(true)}
           onClose={() => setDrawerOpen(false)}
         />
       )}
@@ -293,6 +296,15 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
           currentColumnId={artColumnId}
           onClose={() => setArtStageOpen(false)}
           onSaved={(id) => { updateArtColumnId(id); setArtStageOpen(false) }}
+        />
+      )}
+
+      {numberingOpen && company && (
+        <NumberingModal
+          company={company}
+          itemName={itemName}
+          onClose={() => setNumberingOpen(false)}
+          onSaved={(next) => { updateCompany({ item_next_number: next }); setNumberingOpen(false) }}
         />
       )}
     </div>

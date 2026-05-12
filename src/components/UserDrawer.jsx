@@ -13,7 +13,7 @@ export default function UserDrawer({
   onToggleTheme, onSignOut, onEditProfile, onClose,
   installPrompt, onInstall,
   notifPermission, onToggleNotifications,
-  onConfigureItemName, onConfigureItemFields, onConfigureDefaultEntry, onConfigureArtStage,
+  onConfigureItemName, onConfigureItemFields, onConfigureDefaultEntry, onConfigureArtStage, onConfigureNumbering,
 }) {
   const [prodOpen, setProdOpen]           = useState(false)
   const [configOpen, setConfigOpen]       = useState(false)
@@ -112,6 +112,9 @@ export default function UserDrawer({
                   </button>
                   <button className="drawer-subitem" onClick={() => { onClose(); onConfigureDefaultEntry() }}>
                     Entrada padrão
+                  </button>
+                  <button className="drawer-subitem" onClick={() => { onClose(); onConfigureNumbering?.() }}>
+                    Numeração
                   </button>
                 </div>
               )}

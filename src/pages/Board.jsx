@@ -219,6 +219,8 @@ export default function Board() {
     if (!form.id) {
       const hasCustomizable = form._pendingProds?.some(pp => pp.customizable)
       const targetColumnId = (hasCustomizable && artColumnId) ? artColumnId : form.column_id
+      // Atomically get and increment the item number
+      const { data: itemNumber } = await supabase.rpc('get_next_item_number', { p_company_id: company.id })
       const { data: newCard, error: insertErr } = await supabase.from('cards').insert({
         company_id: company.id,
         column_id: targetColumnId,
@@ -231,6 +233,7 @@ export default function Board() {
         tags: form.tags,
         notes: form.notes,
         position: form.position,
+        item_number: itemNumber || null,
       }).select().single()
       if (insertErr) throw insertErr
       if (newCard && form._pendingProds?.length > 0) {
