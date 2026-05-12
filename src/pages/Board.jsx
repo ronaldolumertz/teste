@@ -42,7 +42,7 @@ function fmtCurrency(v) {
 }
 
 export default function Board() {
-  const { profile, company, isAdmin, itemName, defaultColumnId, updateDefaultColumnId, artColumnId } = useAuth()
+  const { profile, company, isAdmin, itemName, defaultColumnId, updateDefaultColumnId, artColumnId, updateCompany } = useAuth()
 
   const [sectors, setSectors]           = useState([])
   const [columns, setColumns]           = useState([])
@@ -221,6 +221,7 @@ export default function Board() {
       const targetColumnId = (hasCustomizable && artColumnId) ? artColumnId : form.column_id
       // Atomically get and increment the item number
       const { data: itemNumber } = await supabase.rpc('get_next_item_number', { p_company_id: company.id })
+      if (itemNumber != null) updateCompany({ item_next_number: itemNumber + 1 })
       const { data: newCard, error: insertErr } = await supabase.from('cards').insert({
         company_id: company.id,
         column_id: targetColumnId,
