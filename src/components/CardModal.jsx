@@ -652,7 +652,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
           </button>
           {canEdit && (
             <button className="btn btn-primary" onClick={handleSave}
-              disabled={saving || !form.name?.trim()}>
+              disabled={saving || (isEnabled('name') && isRequired('name') && !form.name?.trim())}>
               {saving ? (
                 <>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
