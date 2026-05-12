@@ -40,7 +40,7 @@ function FileIcon({ type = '' }) {
 }
 
 export default function CardModal({ card, columns, canEdit, itemFields: rawItemFields, itemName = 'Item', onSave, onDelete, onClose }) {
-  const { profile } = useAuth()
+  const { profile, company } = useAuth()
   const fieldList = normalizeItemFields(rawItemFields)
   const isEnabled = (key) => {
     const f = fieldList.find(ff => ff.key === key || ff.id === key)
@@ -239,6 +239,23 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
         </div>
 
         <div className="modal-body">
+          {(isNew ? company?.item_next_number != null : card.item_number != null) && (
+            <div className="item-number-block">
+              <div className="item-number-block-label">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>
+                </svg>
+                NÚMERO DO {itemName.toUpperCase()}
+              </div>
+              <div className="item-number-block-value">
+                #{isNew ? company.item_next_number : card.item_number}
+              </div>
+              <div className="item-number-block-sub">
+                {isNew ? 'Número gerado automaticamente' : 'Número do item'}
+              </div>
+            </div>
+          )}
+
           {profile?.name && (
             <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

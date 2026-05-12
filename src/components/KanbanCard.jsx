@@ -116,7 +116,12 @@ export default function KanbanCard({
           {initials(card.name)}
         </div>
         <div className="card-info">
-          <div className="card-name">{card.name}</div>
+          <div className="card-name">
+            {card.item_number != null && (
+              <span className="card-item-number">#{card.item_number}</span>
+            )}
+            {card.name}
+          </div>
           {card.company_name && <div className="card-company">{card.company_name}</div>}
         </div>
         <div className="card-actions">
