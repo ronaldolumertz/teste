@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import UserDrawer from './UserDrawer'
+import { useGlobalVersion } from '../hooks/useGlobalVersion'
 import ProfileModal from './ProfileModal'
 import ItemFieldsModal from './ItemFieldsModal'
 import ItemNameModal from './ItemNameModal'
@@ -45,6 +46,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const location = useLocation()
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme(profile?.id)
+  useGlobalVersion()
   const [drawerOpen, setDrawerOpen]         = useState(false)
   const [profileOpen, setProfileOpen]       = useState(false)
   const [itemFieldsOpen, setItemFieldsOpen]       = useState(false)
