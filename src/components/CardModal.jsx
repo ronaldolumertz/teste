@@ -40,7 +40,7 @@ function FileIcon({ type = '' }) {
 }
 
 export default function CardModal({ card, columns, canEdit, itemFields: rawItemFields, itemName = 'Item', onSave, onDelete, onClose }) {
-  const { profile, company } = useAuth()
+  const { profile, company, artColumnId } = useAuth()
   const fieldList = normalizeItemFields(rawItemFields)
   const isEnabled = (key) => {
     const f = fieldList.find(ff => ff.key === key || ff.id === key)
@@ -63,8 +63,12 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
   const [removingId, setRemovingId] = useState(null)
   const [editingCpId, setEditingCpId] = useState(null)
   const [fileWarning, setFileWarning] = useState('')
+  const [artImageUrl, setArtImageUrl] = useState(null)
+  const [artUploading, setArtUploading] = useState(false)
   const fileInputRef = useRef(null)
+  const artFileRef   = useRef(null)
   const isNew = !card.id
+  const isArtColumn = artColumnId && form.column_id === artColumnId
 
   useEffect(() => {
     supabase.from('products').select('*').eq('active', true).order('name').then(({ data }) => {
@@ -76,6 +80,34 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
       })
     }
   }, [card.id])
+
+  useEffect(() => {
+    if (card.art_image?.path) {
+      supabase.storage.from('card-attachments').createSignedUrl(card.art_image.path, 7200)
+        .then(({ data }) => { if (data?.signedUrl) setArtImageUrl(data.signedUrl) })
+    }
+  }, [card.id])
+
+  const handleArtUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !card.id) return
+    setArtUploading(true)
+    if (form.art_image?.path) {
+      await supabase.storage.from('card-attachments').remove([form.art_image.path])
+    }
+    const safeName = file.name.replace(/[^a-z0-9._-]/gi, '_')
+    const path = `${card.id}/arte_final_${Date.now()}_${safeName}`
+    const { error } = await supabase.storage.from('card-attachments').upload(path, file)
+    if (!error) {
+      const artData = { path, name: file.name, size: file.size, type: file.type }
+      await supabase.from('cards').update({ art_image: artData }).eq('id', card.id)
+      set('art_image', artData)
+      const { data } = await supabase.storage.from('card-attachments').createSignedUrl(path, 7200)
+      if (data?.signedUrl) setArtImageUrl(data.signedUrl)
+    }
+    setArtUploading(false)
+    e.target.value = ''
+  }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const toggleTag = tag => set('tags', form.tags.includes(tag)
@@ -286,6 +318,49 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
               </div>
             </div>
           )}
+
+          {/* Arte Final image — shown full-width below the number */}
+          {artImageUrl && (
+            <div className="art-image-block">
+              <div className="art-image-label">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                ARTE FINAL
+              </div>
+              <a href={artImageUrl} target="_blank" rel="noopener noreferrer" className="art-image-link">
+                <img src={artImageUrl} alt="Arte Final" className="art-image-img" />
+                <div className="art-image-overlay">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                  </svg>
+                  Abrir em tamanho real
+                </div>
+              </a>
+              {canEdit && isArtColumn && (
+                <button className="art-image-replace" onClick={() => artFileRef.current?.click()} disabled={artUploading}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  {artUploading ? 'Enviando…' : 'Substituir arte'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Upload button — only in art column, only for saved cards without art yet */}
+          {!isNew && canEdit && isArtColumn && !artImageUrl && (
+            <button className="art-upload-btn" onClick={() => artFileRef.current?.click()} disabled={artUploading}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              {artUploading ? 'Enviando arte…' : 'Anexar Arte Final'}
+            </button>
+          )}
+          <input ref={artFileRef} type="file" accept="image/*" onChange={handleArtUpload} style={{ display: 'none' }} />
 
           {profile?.name && (
             <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
