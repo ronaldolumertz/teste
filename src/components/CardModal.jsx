@@ -65,6 +65,7 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
   const [fileWarning, setFileWarning] = useState('')
   const [artImageUrl, setArtImageUrl] = useState(null)
   const [artUploading, setArtUploading] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const fileInputRef = useRef(null)
   const artFileRef   = useRef(null)
   const isNew = !card.id
@@ -753,39 +754,51 @@ export default function CardModal({ card, columns, canEdit, itemFields: rawItemF
           </div>
         )}
 
-        <div className="modal-footer">
-          {canEdit && card.id && (
-            <button className="btn btn-danger" onClick={() => onDelete(card.id)} disabled={saving}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-              </svg>
-              Excluir
+        {confirmDelete ? (
+          <div className="modal-footer" style={{ flexDirection:'column', gap:10, alignItems:'stretch' }}>
+            <p style={{ fontSize:13, color:'var(--text-muted)', margin:0 }}>
+              Tem certeza que deseja excluir este {itemName.toLowerCase()}? Esta ação não pode ser desfeita.
+            </p>
+            <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setConfirmDelete(false)}>Cancelar</button>
+              <button className="btn btn-danger" onClick={() => onDelete(card.id)}>Excluir definitivamente</button>
+            </div>
+          </div>
+        ) : (
+          <div className="modal-footer">
+            {canEdit && card.id && (
+              <button className="btn btn-danger" onClick={() => setConfirmDelete(true)} disabled={saving}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                </svg>
+                Excluir
+              </button>
+            )}
+            <div className="spacer" />
+            {grandTotal > 0 && (
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)' }}>
+                Total: {fmt(grandTotal)}
+              </span>
+            )}
+            <button className="btn btn-ghost" onClick={onClose} disabled={saving}>
+              {canEdit ? 'Cancelar' : 'Fechar'}
             </button>
-          )}
-          <div className="spacer" />
-          {grandTotal > 0 && (
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)' }}>
-              Total: {fmt(grandTotal)}
-            </span>
-          )}
-          <button className="btn btn-ghost" onClick={onClose} disabled={saving}>
-            {canEdit ? 'Cancelar' : 'Fechar'}
-          </button>
-          {canEdit && (
-            <button className="btn btn-primary" onClick={handleSave}
-              disabled={saving || (isEnabled('name') && isRequired('name') && !form.name?.trim())}>
-              {saving ? (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                    style={{ animation: 'spin 0.8s linear infinite' }}>
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                  </svg>
-                  Salvando…
-                </>
-              ) : 'Salvar'}
-            </button>
-          )}
-        </div>
+            {canEdit && (
+              <button className="btn btn-primary" onClick={handleSave}
+                disabled={saving || (isEnabled('name') && isRequired('name') && !form.name?.trim())}>
+                {saving ? (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                      style={{ animation: 'spin 0.8s linear infinite' }}>
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    </svg>
+                    Salvando…
+                  </>
+                ) : 'Salvar'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>,
     document.body

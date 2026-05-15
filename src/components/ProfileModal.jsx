@@ -19,7 +19,7 @@ function EyeIcon({ visible }) {
 }
 
 export default function ProfileModal({ onClose }) {
-  const { profile, company, isAdmin, isOwner, refreshProfile, updateCompany } = useAuth()
+  const { profile, company, isAdmin, isOwner, refreshProfile, updateAccentColor } = useAuth()
   const [name, setName]               = useState(profile?.name || '')
   const [phone, setPhone]             = useState(profile?.phone || '')
   const [email, setEmail]             = useState(profile?.email || '')
@@ -49,13 +49,23 @@ export default function ProfileModal({ onClose }) {
     onClose()
   }
 
+  const translateAuthError = (msg = '') => {
+    const m = msg.toLowerCase()
+    if (m.includes('different from the old') || m.includes('same as the old')) return 'A nova senha deve ser diferente da senha atual.'
+    if (m.includes('at least') && m.includes('character')) return 'A senha deve ter no mínimo 6 caracteres.'
+    if (m.includes('invalid') || m.includes('credentials')) return 'Credenciais inválidas.'
+    if (m.includes('email') && m.includes('taken')) return 'Este e-mail já está em uso.'
+    return msg
+  }
+
   const handleSave = async () => {
     setError(''); setSuccess('')
-    if (password && password !== confirm) { setError('As senhas não coincidem.'); return }
+    // Basic required validations (never require password just to save other fields)
     if (!name.trim()) { setError('Nome é obrigatório.'); return }
     if (isAdmin && !companyName.trim()) { setError('Nome da empresa é obrigatório.'); return }
     setLoading(true)
 
+    // ── Save profile fields (always, no password needed) ──
     if (name.trim() !== profile?.name) {
       const { error: e } = await supabase.from('profiles').update({ name: name.trim() }).eq('id', profile.id)
       if (e) { setError(e.message); setLoading(false); return }
@@ -73,22 +83,30 @@ export default function ProfileModal({ onClose }) {
     if (isOwner && accentColor !== originalAccent) {
       const colorToSave = accentColor === DEFAULT_ACCENT ? null : accentColor
       await supabase.from('companies').update({ accent_color: colorToSave }).eq('id', company.id)
-      updateCompany({ accent_color: colorToSave })
+      updateAccentColor(colorToSave)
     }
 
+    // ── Handle email change ──
     const authUpdates = {}
     if (email.trim() !== profile?.email) authUpdates.email = email.trim()
-    if (password) authUpdates.password = password
+
+    // ── Handle password change (only if user typed something) ──
+    if (password) {
+      if (password !== confirm) { setError('As senhas não coincidem.'); setLoading(false); return }
+      authUpdates.password = password
+    }
 
     if (Object.keys(authUpdates).length > 0) {
       const { error: e } = await supabase.auth.updateUser(authUpdates)
-      if (e) { setError(e.message); setLoading(false); return }
+      if (e) { setError(translateAuthError(e.message)); setLoading(false); return }
       if (authUpdates.email) {
         await supabase.from('profiles').update({ email: authUpdates.email }).eq('id', profile.id)
       }
     }
 
     await refreshProfile()
+    // Re-apply accent color after refreshProfile (localStorage fallback guarantees persistence)
+    if (isOwner) updateAccentColor(accentColor === DEFAULT_ACCENT ? null : accentColor)
     setPassword(''); setConfirm('')
     setSuccess('Dados atualizados com sucesso!')
     setLoading(false)

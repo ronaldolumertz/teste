@@ -122,6 +122,18 @@ export function AuthProvider({ children }) {
 
   const updateArtColumnId = (id) => setCompany(prev => ({ ...prev, art_column_id: id }))
 
+  const accentColor = company?.accent_color
+    || (company?.id ? localStorage.getItem(`accent_${company.id}`) : null)
+    || null
+
+  const updateAccentColor = (color) => {
+    if (company?.id) {
+      if (color) localStorage.setItem(`accent_${company.id}`, color)
+      else localStorage.removeItem(`accent_${company.id}`)
+    }
+    setCompany(prev => ({ ...prev, accent_color: color }))
+  }
+
   return (
     <AuthContext.Provider value={{
       user, profile, company, loading,
@@ -129,6 +141,7 @@ export function AuthProvider({ children }) {
       itemName, updateItemName,
       defaultColumnId, updateDefaultColumnId,
       artColumnId, updateArtColumnId,
+      accentColor, updateAccentColor,
       signUp, signIn, signOut,
       refreshProfile: () => user && fetchProfile(user.id),
       updateCompany: (updates) => setCompany(prev => ({ ...prev, ...updates })),

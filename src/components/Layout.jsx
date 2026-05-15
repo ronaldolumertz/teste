@@ -43,12 +43,12 @@ function useTheme(userId) {
 }
 
 export default function Layout({ children, stats, search, onSearch, onAddColumn }) {
-  const { profile, company, isAdmin, isSuperAdmin, signOut, updateCompany, itemName, updateItemName, defaultColumnId, updateDefaultColumnId, artColumnId, updateArtColumnId } = useAuth()
+  const { profile, company, isAdmin, isSuperAdmin, signOut, updateCompany, itemName, updateItemName, defaultColumnId, updateDefaultColumnId, artColumnId, updateArtColumnId, accentColor } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme(profile?.id)
   useGlobalVersion()
-  useEffect(() => { applyAccentColor(company?.accent_color || null) }, [company?.accent_color])
+  useEffect(() => { applyAccentColor(accentColor || null) }, [accentColor])
   const [drawerOpen, setDrawerOpen]         = useState(false)
   const [profileOpen, setProfileOpen]       = useState(false)
   const [itemFieldsOpen, setItemFieldsOpen]       = useState(false)
