@@ -32,7 +32,7 @@ export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDe
       <div className="modal confirm-modal" role="dialog">
         <div className="modal-header">
           <div className="column-dot" style={{ background: color, width: 14, height: 14 }} />
-          <span className="modal-title">Editar Etapa</span>
+          <span className="modal-title">{column.id ? 'Editar Etapa' : 'Nova Etapa'}</span>
           <button className="btn-icon" onClick={onClose}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M18 6 6 18M6 6l12 12"/>
@@ -52,8 +52,12 @@ export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDe
           {sectors.length > 0 && (
             <div className="field">
               <label>Setor</label>
-              <select className="field-input" value={sectorId || ''} onChange={e => setSectorId(e.target.value || null)}>
-                <option value="">Sem Setor</option>
+              <select
+                className={`field-input${!sectorId ? ' field-input-placeholder' : ''}`}
+                value={sectorId || ''}
+                onChange={e => setSectorId(e.target.value || null)}
+              >
+                <option value="" disabled hidden>Selecione o setor</option>
                 {sectors.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
               </select>
             </div>
@@ -175,7 +179,7 @@ export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDe
             )}
             <div className="spacer" />
             <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-            <button className="btn btn-primary" onClick={save}>Salvar</button>
+            <button className="btn btn-primary" onClick={save} disabled={sectors.length > 0 && !sectorId}>Salvar</button>
           </div>
         )}
       </div>
