@@ -7,6 +7,7 @@ import KanbanColumn from '../components/KanbanColumn'
 import CardModal from '../components/CardModal'
 import ColumnModal from '../components/ColumnModal'
 import DefaultEntryModal from '../components/DefaultEntryModal'
+import OnboardingModal from '../components/OnboardingModal'
 
 const COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#22c55e','#14b8a6','#38bdf8','#64748b','#a855f7']
 
@@ -42,7 +43,7 @@ function fmtCurrency(v) {
 }
 
 export default function Board() {
-  const { profile, company, isAdmin, itemName, defaultColumnId, updateDefaultColumnId, artColumnId, updateCompany } = useAuth()
+  const { profile, company, isAdmin, itemName, updateItemName, defaultColumnId, updateDefaultColumnId, artColumnId, updateCompany } = useAuth()
 
   const [sectors, setSectors]           = useState([])
   const [columns, setColumns]           = useState([])
@@ -67,6 +68,12 @@ export default function Board() {
   const panRef   = useRef(null)
   const [defaultEntryOpen, setDefaultEntryOpen]     = useState(false)
   const [defaultEntryWarning, setDefaultEntryWarning] = useState('')
+  const [onboardingStep, setOnboardingStep]         = useState(null) // 'post-sector' | 'name-items'
+  const [onboardingSector, setOnboardingSector]     = useState(null) // { id, title }
+  const [onboardingItemName, setOnboardingItemName] = useState('')
+  const [onboardingItemNameSaving, setOnboardingItemNameSaving] = useState(false)
+  const [sectorNameInput, setSectorNameInput]       = useState('')
+  const [sectorNameCreating, setSectorNameCreating] = useState(false)
 
   const handleBoardMouseDown = useCallback((e) => {
     const el = e.target
@@ -283,16 +290,23 @@ export default function Board() {
   }
 
   // ── Sector CRUD ────────────────────────────────────────────
-  const handleAddSector = async () => {
+  const handleAddSector = async (title) => {
+    const isFirstSector = sectors.length === 0
+    const sectorTitle = (typeof title === 'string' && title.trim()) ? title.trim() : 'Novo Setor'
     const pos = sectors.length
     const { data, error } = await supabase.from('sectors')
-      .insert({ company_id: company.id, title: 'Novo Setor', position: pos })
+      .insert({ company_id: company.id, title: sectorTitle, position: pos })
       .select().single()
     if (error) { setBoardError(error.message); return }
     if (data) {
       setSectors(prev => [...prev, data])
-      setRenamingSectorId(data.id)
-      setRenamingSectorTitle('Novo Setor')
+      if (isFirstSector) {
+        setOnboardingSector({ id: data.id, title: sectorTitle })
+        setOnboardingStep('post-sector')
+      } else {
+        setRenamingSectorId(data.id)
+        setRenamingSectorTitle(sectorTitle)
+      }
     }
   }
 
@@ -325,6 +339,7 @@ export default function Board() {
   }
 
   const handleSaveColumn = async (form) => {
+    const isFirstColumn = !editingCol?.id && columns.length === 0
     if (!editingCol?.id) {
       const scopedCols = columns.filter(c => c.sector_id === (form.sector_id ?? null))
       const { error } = await supabase.from('columns').insert({
@@ -345,6 +360,10 @@ export default function Board() {
     }
     setEditingCol(null)
     fetchAll()
+    if (isFirstColumn) {
+      setOnboardingItemName(itemName !== 'Item' ? itemName : '')
+      setOnboardingStep('name-items')
+    }
   }
 
   const handleDeleteColumn = async (id) => {
@@ -564,26 +583,63 @@ export default function Board() {
 
       <div className="board-areas" ref={boardRef} onMouseDown={handleBoardMouseDown} style={!hasAnyAccess ? { display: 'none' } : {}}>
         {!loading && hasAnyAccess && sectors.length === 0 && noSectorCols.length === 0 ? (
-          <div className="board-empty-state">
-            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" opacity=".2">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <path d="M3 9h18M9 21V9"/>
-            </svg>
+          <div className="onboarding-screen">
             {isAdmin ? (
               <>
-                <p className="board-empty-title">Nenhum setor criado ainda.</p>
-                <p className="board-empty-sub">Organize seu pipeline criando setores e etapas.</p>
-                <button className="btn btn-primary" onClick={handleAddSector}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M12 5v14M5 12h14"/>
+                <div className="onboarding-screen-icon">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
+                    <rect x="2" y="2" width="9" height="9" rx="1.5"/><rect x="13" y="2" width="9" height="9" rx="1.5"/>
+                    <rect x="2" y="13" width="9" height="9" rx="1.5"/><rect x="13" y="13" width="9" height="9" rx="1.5"/>
                   </svg>
-                  Criar primeiro setor
-                </button>
+                </div>
+                <div className="onboarding-step-badge">Passo 1 de 3</div>
+                <h2 className="onboarding-title">Vamos começar criando seu primeiro setor</h2>
+                <p className="onboarding-desc">
+                  Os setores agrupam suas etapas e organizam o fluxo de trabalho da sua empresa.
+                </p>
+                <div className="onboarding-examples">
+                  <span>Comercial</span><span>Financeiro</span><span>Produção</span><span>Suporte</span>
+                </div>
+                <div className="onboarding-create-form">
+                  <input
+                    className="field-input"
+                    placeholder="Nome do setor (ex: Comercial)"
+                    value={sectorNameInput}
+                    onChange={e => setSectorNameInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && sectorNameInput.trim() && !sectorNameCreating) {
+                        setSectorNameCreating(true)
+                        handleAddSector(sectorNameInput).finally(() => { setSectorNameCreating(false); setSectorNameInput('') })
+                      }
+                    }}
+                    style={{ fontSize: 15, textAlign: 'center' }}
+                    autoFocus
+                    maxLength={40}
+                  />
+                  <button
+                    className="btn btn-primary onboarding-btn"
+                    disabled={!sectorNameInput.trim() || sectorNameCreating}
+                    onClick={() => {
+                      setSectorNameCreating(true)
+                      handleAddSector(sectorNameInput).finally(() => { setSectorNameCreating(false); setSectorNameInput('') })
+                    }}
+                  >
+                    {sectorNameCreating
+                      ? <><div className="spinner" style={{ width: 13, height: 13, borderWidth: 2 }} /> Criando…</>
+                      : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg> Criar primeiro setor</>
+                    }
+                  </button>
+                </div>
               </>
             ) : (
               <>
-                <p className="board-empty-title">Board ainda não configurado.</p>
-                <p className="board-empty-sub">Aguarde o administrador criar as etapas para começar.</p>
+                <div className="onboarding-screen-icon">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+                  </svg>
+                </div>
+                <h2 className="onboarding-title">Aguardando configuração</h2>
+                <p className="onboarding-desc">O administrador ainda não criou as etapas do sistema. Tente novamente em breve.</p>
               </>
             )}
           </div>
@@ -863,6 +919,27 @@ export default function Board() {
           }}
         />
       )}
+
+      <OnboardingModal
+        step={onboardingStep}
+        sectorName={onboardingSector?.title}
+        onCreateStage={() => {
+          setOnboardingStep(null)
+          if (onboardingSector) handleAddEtapa(onboardingSector.id)
+        }}
+        itemNameValue={onboardingItemName}
+        onItemNameChange={setOnboardingItemName}
+        savingName={onboardingItemNameSaving}
+        onSaveItemName={async () => {
+          const name = onboardingItemName.trim()
+          if (!name) return
+          setOnboardingItemNameSaving(true)
+          await supabase.from('companies').update({ item_name: name }).eq('id', company.id)
+          updateItemName(name)
+          setOnboardingItemNameSaving(false)
+          setOnboardingStep(null)
+        }}
+      />
     </Layout>
   )
 }
