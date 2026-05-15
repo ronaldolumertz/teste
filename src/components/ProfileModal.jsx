@@ -35,8 +35,12 @@ export default function ProfileModal({ onClose }) {
   const logoInputRef = useRef(null)
 
   const originalAccent = company?.accent_color || DEFAULT_ACCENT
-  const [accentColor, setAccentColor] = useState(originalAccent)
-  const [accentHex, setAccentHex]     = useState(originalAccent)
+  const [accentColor, setAccentColor]           = useState(originalAccent)
+  const [accentHex, setAccentHex]               = useState(originalAccent)
+  const [savedAccentColor, setSavedAccentColor] = useState(originalAccent)
+  const [confirmingColor, setConfirmingColor]   = useState(false)
+
+  const colorChanged = accentColor !== savedAccentColor
 
   const handleColorChange = (hex) => {
     setAccentColor(hex)
@@ -44,8 +48,18 @@ export default function ProfileModal({ onClose }) {
     applyAccentColor(hex)
   }
 
+  const handleConfirmColor = async () => {
+    setConfirmingColor(true)
+    const colorToSave = accentColor === DEFAULT_ACCENT ? null : accentColor
+    await supabase.from('companies').update({ accent_color: colorToSave }).eq('id', company.id)
+    updateAccentColor(colorToSave)
+    setSavedAccentColor(accentColor)
+    setConfirmingColor(false)
+  }
+
   const handleClose = () => {
-    applyAccentColor(originalAccent)
+    // Revert live preview to last confirmed color on cancel
+    applyAccentColor(savedAccentColor === DEFAULT_ACCENT ? null : savedAccentColor)
     onClose()
   }
 
@@ -80,12 +94,6 @@ export default function ProfileModal({ onClose }) {
       if (e) { setError(e.message); setLoading(false); return }
     }
 
-    if (isOwner && accentColor !== originalAccent) {
-      const colorToSave = accentColor === DEFAULT_ACCENT ? null : accentColor
-      await supabase.from('companies').update({ accent_color: colorToSave }).eq('id', company.id)
-      updateAccentColor(colorToSave)
-    }
-
     // ── Handle email change ──
     const authUpdates = {}
     if (email.trim() !== profile?.email) authUpdates.email = email.trim()
@@ -105,8 +113,6 @@ export default function ProfileModal({ onClose }) {
     }
 
     await refreshProfile()
-    // Re-apply accent color after refreshProfile (localStorage fallback guarantees persistence)
-    if (isOwner) updateAccentColor(accentColor === DEFAULT_ACCENT ? null : accentColor)
     setPassword(''); setConfirm('')
     setSuccess('Dados atualizados com sucesso!')
     setLoading(false)
@@ -220,15 +226,31 @@ export default function ProfileModal({ onClose }) {
                   maxLength={7}
                   style={{ fontFamily:'monospace', letterSpacing:'.05em' }}
                 />
-                {accentColor !== DEFAULT_ACCENT && (
-                  <button
-                    className="btn btn-ghost"
-                    style={{ fontSize:12, whiteSpace:'nowrap', flexShrink:0, padding:'6px 10px' }}
-                    onClick={() => handleColorChange(DEFAULT_ACCENT)}
-                  >
-                    Padrão
-                  </button>
-                )}
+                <div style={{ display:'flex', gap:5, flexShrink:0 }}>
+                  {accentColor !== DEFAULT_ACCENT && (
+                    <button
+                      className="btn btn-ghost"
+                      style={{ fontSize:12, whiteSpace:'nowrap', padding:'6px 10px' }}
+                      onClick={() => handleColorChange(DEFAULT_ACCENT)}
+                      disabled={confirmingColor}
+                    >
+                      Padrão
+                    </button>
+                  )}
+                  {colorChanged && (
+                    <button
+                      className="btn btn-primary"
+                      style={{ fontSize:12, whiteSpace:'nowrap', padding:'6px 12px' }}
+                      onClick={handleConfirmColor}
+                      disabled={confirmingColor}
+                    >
+                      {confirmingColor
+                        ? <><div className="spinner" style={{ width:11, height:11, borderWidth:2 }} /> Salvando…</>
+                        : 'Confirmar'
+                      }
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="accent-preset-row">
                 {ACCENT_PRESETS.map(c => (
