@@ -516,6 +516,9 @@ export default function Board() {
 
   const hasAnyAccess = isAdmin || columns.some(c => canViewColumn(c.id))
 
+  // Quick bar and item creation only available after full onboarding completion
+  const onboardingComplete = !loading && sectors.length > 0 && columns.length > 0 && !!company?.item_name
+
   if (loading) return (
     <Layout stats={stats}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -555,31 +558,33 @@ export default function Board() {
         </div>
       )}
 
-      <div className="board-quick-bar">
-        <button className="btn btn-primary board-quick-add" onClick={handleQuickAdd}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Adicionar {itemName}
-        </button>
-        <div className="board-quick-search">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={`Buscar ${itemName}...`}
-          />
-          {search && (
-            <button className="btn-icon" style={{ padding: 2 }} onClick={() => setSearch('')}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M18 6 6 18M6 6l12 12"/>
-              </svg>
-            </button>
-          )}
+      {onboardingComplete && (
+        <div className="board-quick-bar board-quick-bar-enter">
+          <button className="btn btn-primary board-quick-add" onClick={handleQuickAdd}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Adicionar {itemName}
+          </button>
+          <div className="board-quick-search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={`Buscar ${itemName}...`}
+            />
+            {search && (
+              <button className="btn-icon" style={{ padding: 2 }} onClick={() => setSearch('')}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18 6 6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="board-areas" ref={boardRef} onMouseDown={handleBoardMouseDown} style={!hasAnyAccess ? { display: 'none' } : {}}>
         {!loading && hasAnyAccess && sectors.length === 0 && noSectorCols.length === 0 ? (
