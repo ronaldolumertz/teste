@@ -68,7 +68,7 @@ export default function DefaultEntryModal({ company, currentColumnId, warningMsg
           )}
 
           <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 2 }}>
-            Escolha a etapa onde novos itens criados pelo botão superior entrarão automaticamente.
+            Novos itens criados entrarão automaticamente na etapa selecionada.
           </p>
 
           {loading ? (

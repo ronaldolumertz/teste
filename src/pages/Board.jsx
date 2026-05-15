@@ -215,7 +215,7 @@ export default function Board() {
   const handleQuickAdd = () => {
     const col = columns.find(c => c.id === defaultColumnId)
     if (!col) {
-      setDefaultEntryWarning(`Escolha uma etapa padrão para criar novos ${pluralize(itemName).toLowerCase()} pelo botão superior.`)
+      setDefaultEntryWarning(`Escolha uma etapa padrão para entrada de ${pluralize(itemName).toLowerCase()}.`)
       setDefaultEntryOpen(true)
       return
     }
@@ -886,31 +886,53 @@ export default function Board() {
         )
       })()}
 
-      {deletingSectorId && createPortal(
-        <div className="modal-overlay" onClick={() => setDeletingSectorId(null)}>
-          <div className="modal confirm-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title">Excluir Setor</span>
-              <button className="btn-icon" onClick={() => setDeletingSectorId(null)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M18 6 6 18M6 6l12 12"/>
-                </svg>
-              </button>
+      {deletingSectorId && (() => {
+        const sectorHasCols = columns.some(c => c.sector_id === deletingSectorId)
+        const deletingSector = sectors.find(s => s.id === deletingSectorId)
+        return createPortal(
+          <div className="modal-overlay" onClick={() => setDeletingSectorId(null)}>
+            <div className="modal confirm-modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <span className="modal-title">Excluir Setor</span>
+                <button className="btn-icon" onClick={() => setDeletingSectorId(null)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+              <div className="modal-body">
+                {sectorHasCols ? (
+                  <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                    <div style={{ display:'flex', gap:10, padding:'12px 14px', background:'rgba(239,68,68,.08)', border:'1px solid rgba(239,68,68,.25)', borderRadius:'var(--radius)' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" style={{ flexShrink:0, marginTop:1 }}>
+                        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                      </svg>
+                      <p style={{ fontSize:13, color:'#fca5a5', margin:0, lineHeight:1.6 }}>
+                        O setor <strong>"{deletingSector?.title}"</strong> possui etapas vinculadas. Exclua ou mova as etapas antes de excluir o setor.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 14, color: 'var(--text)', margin:0 }}>
+                    Excluir o setor <strong>"{deletingSector?.title}"</strong>? Esta ação não pode ser desfeita.
+                  </p>
+                )}
+              </div>
+              <div className="modal-footer">
+                <div className="spacer" />
+                <button className="btn btn-ghost" onClick={() => setDeletingSectorId(null)}>
+                  {sectorHasCols ? 'Fechar' : 'Cancelar'}
+                </button>
+                {!sectorHasCols && (
+                  <button className="btn btn-danger" onClick={() => handleDeleteSector(deletingSectorId)}>Excluir Setor</button>
+                )}
+              </div>
             </div>
-            <div className="modal-body">
-              <p style={{ fontSize: 14, color: 'var(--text)' }}>
-                Excluir este setor? As etapas serão movidas para <strong>"Sem Setor"</strong> e os itens serão preservados.
-              </p>
-            </div>
-            <div className="modal-footer">
-              <div className="spacer" />
-              <button className="btn btn-ghost" onClick={() => setDeletingSectorId(null)}>Cancelar</button>
-              <button className="btn btn-danger" onClick={() => handleDeleteSector(deletingSectorId)}>Excluir Setor</button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )
+      })()}
 
       {defaultEntryOpen && company && (
         <DefaultEntryModal

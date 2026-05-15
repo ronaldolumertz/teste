@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
 export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDelete, onClose }) {
-  const [title, setTitle]         = useState(column.title)
+  const [title, setTitle]         = useState(column.id ? column.title : '')
   const [color, setColor]         = useState(column.color)
   const [accessAll, setAccessAll] = useState(column.access_all ?? false)
   const [rules, setRules]         = useState(() =>
@@ -25,7 +25,8 @@ export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDe
   const updateRule = (id, k, v) => setRules(r => r.map(x => x.id === id ? { ...x, [k]: v } : x))
   const removeRule = (id) => setRules(r => r.filter(x => x.id !== id))
 
-  const save = () => onSave({ title: title.trim() || column.title, color, access_all: accessAll, time_rules: rules, sector_id: sectorId })
+  const canSave = !!title.trim() && (sectors.length === 0 || !!sectorId)
+  const save = () => { if (!canSave) return; onSave({ title: title.trim(), color, access_all: accessAll, time_rules: rules, sector_id: sectorId }) }
 
   return createPortal(
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -46,7 +47,7 @@ export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDe
             <input ref={inputRef} className="field-input" value={title}
               onChange={e => setTitle(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') onClose() }}
-              placeholder="Nome da etapa" />
+              placeholder="Ex: Lead, Negociação, Entregue…" />
           </div>
 
           {sectors.length > 0 && (
@@ -179,7 +180,7 @@ export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDe
             )}
             <div className="spacer" />
             <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-            <button className="btn btn-primary" onClick={save} disabled={sectors.length > 0 && !sectorId}>Salvar</button>
+            <button className="btn btn-primary" onClick={save} disabled={!canSave}>Salvar</button>
           </div>
         )}
       </div>
