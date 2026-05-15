@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { applyAccentColor } from '../lib/accentColor'
 
 const AuthContext = createContext(null)
 
@@ -94,6 +95,7 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
+    applyAccentColor(null) // reset color synchronously before any re-render
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)

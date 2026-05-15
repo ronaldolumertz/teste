@@ -48,7 +48,10 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme(profile?.id)
   useGlobalVersion()
-  useEffect(() => { applyAccentColor(accentColor || null) }, [accentColor])
+  useEffect(() => {
+    applyAccentColor(accentColor || null)
+    return () => applyAccentColor(null) // reset when Layout unmounts (logout/session expire)
+  }, [accentColor])
   const [drawerOpen, setDrawerOpen]         = useState(false)
   const [profileOpen, setProfileOpen]       = useState(false)
   const [itemFieldsOpen, setItemFieldsOpen]       = useState(false)
