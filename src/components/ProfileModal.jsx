@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { applyAccentColor, DEFAULT_ACCENT, ACCENT_PRESETS } from '../lib/accentColor'
 
 function EyeIcon({ visible }) {
   return visible ? (
@@ -18,8 +19,9 @@ function EyeIcon({ visible }) {
 }
 
 export default function ProfileModal({ onClose }) {
-  const { profile, company, isAdmin, isOwner, refreshProfile } = useAuth()
+  const { profile, company, isAdmin, isOwner, refreshProfile, updateCompany } = useAuth()
   const [name, setName]               = useState(profile?.name || '')
+  const [phone, setPhone]             = useState(profile?.phone || '')
   const [email, setEmail]             = useState(profile?.email || '')
   const [companyName, setCompanyName] = useState(company?.name || '')
   const [password, setPassword]       = useState('')
@@ -31,6 +33,21 @@ export default function ProfileModal({ onClose }) {
   const [error, setError]             = useState('')
   const [success, setSuccess]         = useState('')
   const logoInputRef = useRef(null)
+
+  const originalAccent = company?.accent_color || DEFAULT_ACCENT
+  const [accentColor, setAccentColor] = useState(originalAccent)
+  const [accentHex, setAccentHex]     = useState(originalAccent)
+
+  const handleColorChange = (hex) => {
+    setAccentColor(hex)
+    setAccentHex(hex)
+    applyAccentColor(hex)
+  }
+
+  const handleClose = () => {
+    applyAccentColor(originalAccent)
+    onClose()
+  }
 
   const handleSave = async () => {
     setError(''); setSuccess('')
@@ -44,9 +61,19 @@ export default function ProfileModal({ onClose }) {
       if (e) { setError(e.message); setLoading(false); return }
     }
 
+    if (phone.trim() !== (profile?.phone || '')) {
+      await supabase.from('profiles').update({ phone: phone.trim() }).eq('id', profile.id)
+    }
+
     if (isAdmin && companyName.trim() !== company?.name) {
       const { error: e } = await supabase.from('companies').update({ name: companyName.trim() }).eq('id', company.id)
       if (e) { setError(e.message); setLoading(false); return }
+    }
+
+    if (isOwner && accentColor !== originalAccent) {
+      const colorToSave = accentColor === DEFAULT_ACCENT ? null : accentColor
+      await supabase.from('companies').update({ accent_color: colorToSave }).eq('id', company.id)
+      updateCompany({ accent_color: colorToSave })
     }
 
     const authUpdates = {}
@@ -99,11 +126,11 @@ export default function ProfileModal({ onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleClose}>
       <div className="modal" style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">Editar Perfil</span>
-          <button className="btn-icon" onClick={onClose}>
+          <button className="btn-icon" onClick={handleClose}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M18 6 6 18M6 6l12 12"/>
             </svg>
@@ -151,9 +178,62 @@ export default function ProfileModal({ onClose }) {
             </div>
           )}
 
+          {isOwner && (
+            <div className="field">
+              <label>
+                Cor do sistema
+                <span style={{ color:'var(--text-dim)', fontWeight:400, textTransform:'none', marginLeft:6, letterSpacing:0 }}>
+                  · afeta todos da empresa
+                </span>
+              </label>
+              <div className="accent-color-row">
+                <label className="accent-color-swatch" style={{ background: accentColor }} title="Clique para escolher cor">
+                  <input type="color" value={accentColor} onChange={e => handleColorChange(e.target.value)} />
+                </label>
+                <input
+                  className="field-input"
+                  value={accentHex}
+                  onChange={e => {
+                    const v = e.target.value.startsWith('#') ? e.target.value : '#' + e.target.value
+                    setAccentHex(v)
+                    if (/^#[0-9a-fA-F]{6}$/.test(v)) handleColorChange(v)
+                  }}
+                  placeholder="#6366f1"
+                  maxLength={7}
+                  style={{ fontFamily:'monospace', letterSpacing:'.05em' }}
+                />
+                {accentColor !== DEFAULT_ACCENT && (
+                  <button
+                    className="btn btn-ghost"
+                    style={{ fontSize:12, whiteSpace:'nowrap', flexShrink:0, padding:'6px 10px' }}
+                    onClick={() => handleColorChange(DEFAULT_ACCENT)}
+                  >
+                    Padrão
+                  </button>
+                )}
+              </div>
+              <div className="accent-preset-row">
+                {ACCENT_PRESETS.map(c => (
+                  <button
+                    key={c}
+                    className={`accent-preset-dot${accentColor === c ? ' active' : ''}`}
+                    style={{ background: c }}
+                    title={c}
+                    onClick={() => handleColorChange(c)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="field">
             <label>Seu Nome</label>
             <input className="field-input" value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" />
+          </div>
+
+          <div className="field">
+            <label>Telefone</label>
+            <input className="field-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(00) 00000-0000" />
           </div>
 
           <div className="field">
@@ -191,7 +271,7 @@ export default function ProfileModal({ onClose }) {
 
         <div className="modal-footer">
           <div className="spacer" />
-          <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+          <button className="btn btn-ghost" onClick={handleClose}>Cancelar</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={loading}>
             {loading ? 'Salvando…' : 'Salvar'}
           </button>

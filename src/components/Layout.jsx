@@ -10,6 +10,7 @@ import DefaultEntryModal from './DefaultEntryModal'
 import ArtStageModal from './ArtStageModal'
 import NumberingModal from './NumberingModal'
 import { subscribePush, unsubscribePush, getNotificationPermission } from '../lib/push'
+import { applyAccentColor } from '../lib/accentColor'
 
 function useTheme(userId) {
   const [light, setLight] = useState(false)
@@ -47,6 +48,7 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const navigate = useNavigate()
   const [isLight, toggleTheme] = useTheme(profile?.id)
   useGlobalVersion()
+  useEffect(() => { applyAccentColor(company?.accent_color || null) }, [company?.accent_color])
   const [drawerOpen, setDrawerOpen]         = useState(false)
   const [profileOpen, setProfileOpen]       = useState(false)
   const [itemFieldsOpen, setItemFieldsOpen]       = useState(false)

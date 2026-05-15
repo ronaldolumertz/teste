@@ -252,6 +252,16 @@ select.field-input.field-input-placeholder { color:var(--text-dim); }
 .pass-eye { position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--text-dim); padding:4px; line-height:0; }
 .pass-eye:hover { color:var(--text-muted); }
 
+/* ── Seletor de cor de acento ────────────────────────────── */
+.accent-color-row { display:flex; align-items:center; gap:8px; }
+.accent-color-swatch { width:42px; height:42px; border-radius:var(--radius); flex-shrink:0; cursor:pointer; border:2px solid rgba(255,255,255,.18); position:relative; overflow:hidden; display:block; box-shadow:0 2px 8px rgba(0,0,0,.25); transition:transform 120ms; }
+.accent-color-swatch:hover { transform:scale(1.06); }
+.accent-color-swatch input[type="color"] { position:absolute; inset:-4px; opacity:0; cursor:pointer; width:calc(100%+8px); height:calc(100%+8px); }
+.accent-preset-row { display:flex; gap:7px; flex-wrap:wrap; margin-top:8px; }
+.accent-preset-dot { width:26px; height:26px; border-radius:50%; border:2px solid transparent; cursor:pointer; transition:transform 120ms,border-color 120ms,box-shadow 120ms; flex-shrink:0; }
+.accent-preset-dot:hover { transform:scale(1.18); }
+.accent-preset-dot.active { border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.5); }
+
 /* ── Responsivo Mobile ───────────────────────────────────── */
 @media (max-width: 640px) {
   /* Header */
