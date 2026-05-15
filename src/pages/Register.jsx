@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { applyAccentColor } from '../lib/accentColor'
 
 function EyeIcon({ visible }) {
   return visible ? (
@@ -25,6 +26,8 @@ export default function Register() {
   const [busy, setBusy]             = useState(false)
   const { signUp }                  = useAuth()
   const navigate                    = useNavigate()
+
+  useEffect(() => { applyAccentColor(null) }, [])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 

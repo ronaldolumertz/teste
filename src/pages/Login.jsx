@@ -1,12 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { applyAccentColor } from '../lib/accentColor'
 
 export default function Login() {
   const [form, setForm]   = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [busy, setBusy]   = useState(false)
   const { signIn }        = useAuth()
+
+  // Always reset accent color on the login page — the company color must
+  // never bleed into the public area, even with old service-worker cache.
+  useEffect(() => { applyAccentColor(null) }, [])
   const navigate          = useNavigate()
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
