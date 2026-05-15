@@ -8,6 +8,7 @@ import CardModal from '../components/CardModal'
 import ColumnModal from '../components/ColumnModal'
 import DefaultEntryModal from '../components/DefaultEntryModal'
 import OnboardingModal from '../components/OnboardingModal'
+import ListView from '../components/ListView'
 
 const COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f59e0b','#22c55e','#14b8a6','#38bdf8','#64748b','#a855f7']
 
@@ -44,6 +45,14 @@ function fmtCurrency(v) {
 
 export default function Board() {
   const { profile, company, isAdmin, itemName, updateItemName, defaultColumnId, updateDefaultColumnId, artColumnId, updateCompany } = useAuth()
+
+  const [viewMode, setViewMode] = useState(() =>
+    localStorage.getItem(`view_mode_${profile?.id}`) || 'list'
+  )
+  const handleSetViewMode = (mode) => {
+    setViewMode(mode)
+    if (profile?.id) localStorage.setItem(`view_mode_${profile.id}`, mode)
+  }
 
   const [sectors, setSectors]           = useState([])
   const [columns, setColumns]           = useState([])
@@ -566,6 +575,33 @@ export default function Board() {
             </svg>
             Adicionar {itemName}
           </button>
+
+          <div className="view-toggle">
+            <button
+              className={`view-toggle-btn${viewMode === 'list' ? ' active' : ''}`}
+              onClick={() => handleSetViewMode('list')}
+              title="Visualização em lista"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+                <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+              Lista
+            </button>
+            <button
+              className={`view-toggle-btn${viewMode === 'kanban' ? ' active' : ''}`}
+              onClick={() => handleSetViewMode('kanban')}
+              title="Visualização Kanban"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+              </svg>
+              Kanban
+            </button>
+          </div>
+
           <div className="board-quick-search">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -586,7 +622,20 @@ export default function Board() {
         </div>
       )}
 
-      <div className="board-areas" ref={boardRef} onMouseDown={handleBoardMouseDown} style={!hasAnyAccess ? { display: 'none' } : {}}>
+      {onboardingComplete && viewMode === 'list' && (
+        <ListView
+          sectors={sectors}
+          columns={columns}
+          cards={cards}
+          canViewColumn={canViewColumn}
+          onEditCard={setEditingCard}
+          itemName={itemName}
+          search={search}
+        />
+      )}
+
+      <div className="board-areas" ref={boardRef} onMouseDown={handleBoardMouseDown}
+        style={!hasAnyAccess || (onboardingComplete && viewMode === 'list') ? { display: 'none' } : {}}>
         {!loading && hasAnyAccess && sectors.length === 0 && noSectorCols.length === 0 ? (
           <div className="onboarding-screen">
             {isAdmin ? (
