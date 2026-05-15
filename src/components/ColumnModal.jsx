@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
-export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDelete, onClose }) {
+export default function ColumnModal({ column, sectors = [], COLORS, cardCount = 0, onSave, onDelete, onClose }) {
   const [title, setTitle]         = useState(column.id ? column.title : '')
   const [color, setColor]         = useState(column.color)
   const [accessAll, setAccessAll] = useState(column.access_all ?? false)
@@ -159,15 +159,32 @@ export default function ColumnModal({ column, sectors = [], COLORS, onSave, onDe
         </div>
 
         {confirmDelete ? (
-          <div className="modal-footer" style={{ flexDirection:'column', gap:10, alignItems:'stretch' }}>
-            <p style={{ fontSize:13, color:'var(--text-muted)', margin:0 }}>
-              Tem certeza? Todos os itens desta coluna serão excluídos permanentemente.
-            </p>
-            <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
-              <button className="btn btn-ghost" onClick={() => setConfirmDelete(false)}>Cancelar</button>
-              <button className="btn btn-danger" onClick={() => onDelete(column.id)}>Excluir definitivamente</button>
+          cardCount > 0 ? (
+            <div className="modal-footer" style={{ flexDirection:'column', gap:10, alignItems:'stretch' }}>
+              <div style={{ display:'flex', gap:10, padding:'12px 14px', background:'rgba(239,68,68,.08)', border:'1px solid rgba(239,68,68,.25)', borderRadius:'var(--radius)' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" style={{ flexShrink:0, marginTop:1 }}>
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <p style={{ fontSize:13, color:'#fca5a5', margin:0, lineHeight:1.6 }}>
+                  Esta etapa possui <strong>{cardCount} {cardCount === 1 ? 'item' : 'itens'}</strong>. Mova ou exclua os itens antes de excluir a etapa.
+                </p>
+              </div>
+              <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+                <button className="btn btn-ghost" onClick={() => setConfirmDelete(false)}>Fechar</button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="modal-footer" style={{ flexDirection:'column', gap:10, alignItems:'stretch' }}>
+              <p style={{ fontSize:13, color:'var(--text-muted)', margin:0 }}>
+                Tem certeza? Esta ação não pode ser desfeita.
+              </p>
+              <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+                <button className="btn btn-ghost" onClick={() => setConfirmDelete(false)}>Cancelar</button>
+                <button className="btn btn-danger" onClick={() => onDelete(column.id)}>Excluir definitivamente</button>
+              </div>
+            </div>
+          )
         ) : (
           <div className="modal-footer">
             {column.id && (

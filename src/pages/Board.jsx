@@ -785,6 +785,7 @@ export default function Board() {
           sectors={sectors}
           COLORS={COLORS}
           companyId={company.id}
+          cardCount={editingCol.id ? cards.filter(c => c.column_id === editingCol.id).length : 0}
           onSave={handleSaveColumn}
           onDelete={handleDeleteColumn}
           onClose={() => setEditingCol(null)}
