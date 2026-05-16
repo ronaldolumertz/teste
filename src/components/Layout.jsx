@@ -22,6 +22,7 @@ async function loadSystemSettings() {
   _sysSettingsCache = data || {}
   return _sysSettingsCache
 }
+export function invalidateSystemSettingsCache() { _sysSettingsCache = null }
 
 function useTheme(userId) {
   const [light, setLight] = useState(false)

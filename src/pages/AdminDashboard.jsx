@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import Layout from '../components/Layout'
+import Layout, { invalidateSystemSettingsCache } from '../components/Layout'
 import { VERSION_LS_KEY } from '../hooks/useGlobalVersion'
 import ColorPicker from '../components/ColorPicker'
 import { setFavicon } from '../lib/favicon'
+import { useAuth } from '../contexts/AuthContext'
 
 const fmt = v => new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits:0 }).format(v)
 const fmtDate = d => new Date(d).toLocaleDateString('pt-BR')
@@ -14,6 +15,7 @@ const generateIconSvg = (color) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="${color}"/><svg x="96" y="96" width="320" height="320" viewBox="0 0 48 46" preserveAspectRatio="xMidYMid meet"><path fill="white" d="${BOLT_PATH}"/></svg></svg>`
 
 export default function AdminDashboard() {
+  const { updateCompany } = useAuth()
   const [companies, setCompanies]         = useState([])
   const [loading, setLoading]             = useState(true)
   const [renovando, setRenovando]         = useState(false)
@@ -64,6 +66,7 @@ export default function AdminDashboard() {
     setSavedSettingsOk(false)
     const color = settings.default_accent
     await supabase.from('system_settings').upsert({ key: 'default_accent', value: color }, { onConflict: 'key' })
+    invalidateSystemSettingsCache()
 
     // Gerar ícone SVG com a nova cor e fazer upload
     try {
@@ -86,6 +89,17 @@ export default function AdminDashboard() {
     setResettingAccent(true)
     setResetAccentOk(false)
     await supabase.rpc('reset_all_company_accents')
+
+    // Limpar TODOS os accent_* do localStorage (cor antiga sobrepunha o reset)
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (key?.startsWith('accent_')) localStorage.removeItem(key)
+    }
+
+    // Forçar re-avaliação da cor: limpa o estado local e invalida o cache
+    invalidateSystemSettingsCache()
+    updateCompany({ accent_color: null })
+
     setResettingAccent(false)
     setResetAccentOk(true)
     setTimeout(() => setResetAccentOk(false), 5000)
