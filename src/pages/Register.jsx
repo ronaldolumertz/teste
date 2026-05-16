@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { applyAccentColor } from '../lib/accentColor'
 import { supabase } from '../lib/supabase'
 import { setFavicon } from '../lib/favicon'
+import PhoneInput from '../components/PhoneInput'
 
 function EyeIcon({ visible }) {
   return visible ? (
@@ -26,6 +27,8 @@ export default function Register() {
   const [showConf, setShowConf]     = useState(false)
   const [error, setError]           = useState('')
   const [busy, setBusy]             = useState(false)
+  const [phone, setPhone]           = useState('')
+  const [phoneError, setPhoneError] = useState(false)
   const { signUp }                  = useAuth()
   const navigate                    = useNavigate()
   const [appName, setAppName]       = useState(() => { try { return JSON.parse(sessionStorage.getItem('_sysSettings') || '{}').app_name || '' } catch (_) { return '' } })
@@ -51,14 +54,13 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (form.password !== form.confirm) {
-      setError('As senhas não coincidem.')
-      return
-    }
+    if (form.password !== form.confirm) { setError('As senhas não coincidem.'); return }
+    if (!phone) { setPhoneError(true); setError('Informe o telefone com DDD corretamente.'); return }
+    setPhoneError(false)
     setError('')
     setBusy(true)
     try {
-      await signUp(form)
+      await signUp({ ...form, phone })
       navigate('/app')
     } catch (err) {
       setError(err.message || 'Erro ao criar conta.')
@@ -92,6 +94,15 @@ export default function Register() {
             <input className="field-input" value={form.name}
               onChange={e => set('name', e.target.value)}
               placeholder="Nome completo" required />
+          </div>
+          <div className="field">
+            <label>Telefone</label>
+            <PhoneInput
+              value={phone}
+              onChange={v => { setPhone(v); if (v) setPhoneError(false) }}
+              error={phoneError}
+            />
+            {phoneError && <span style={{ fontSize:11, color:'#ef4444', marginTop:3 }}>Informe DDD + número completo</span>}
           </div>
           <div className="field">
             <label>E-mail</label>
