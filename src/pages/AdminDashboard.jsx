@@ -23,16 +23,25 @@ export default function AdminDashboard() {
   const [settings, setSettings]           = useState(() => {
     try {
       const s = JSON.parse(sessionStorage.getItem('_sysSettings') || '{}')
-      return { default_accent: s.default_accent || '#6366f1', app_icon_url: s.app_icon_url || '' }
-    } catch (_) { return { default_accent: '#6366f1', app_icon_url: '' } }
+      return {
+        default_accent: s.default_accent || '#6366f1',
+        app_icon_url:   s.app_icon_url   || '',
+        app_name:       s.app_name       || '',
+        app_logo_url:   s.app_logo_url   || '',
+      }
+    } catch (_) { return { default_accent: '#6366f1', app_icon_url: '', app_name: '', app_logo_url: '' } }
   })
   const [savingSettings, setSavingSettings] = useState(false)
   const [savedSettingsOk, setSavedSettingsOk] = useState(false)
   const [uploadingIcon, setUploadingIcon] = useState(false)
   const [iconError, setIconError]         = useState('')
+  const [savingName, setSavingName]         = useState(false)
+  const [savedNameOk, setSavedNameOk]       = useState(false)
+  const [uploadingLogo, setUploadingLogo]   = useState(false)
   const [resettingAccent, setResettingAccent] = useState(false)
   const [resetAccentOk, setResetAccentOk] = useState(false)
   const iconInputRef                      = useRef(null)
+  const logoInputRef                      = useRef(null)
 
   useEffect(() => {
     supabase
@@ -44,7 +53,7 @@ export default function AdminDashboard() {
     supabase
       .from('system_settings')
       .select('key, value')
-      .in('key', ['default_accent', 'app_icon_url'])
+      .in('key', ['default_accent', 'app_icon_url', 'app_name', 'app_logo_url'])
       .then(({ data }) => {
         if (data?.length) {
           const map = Object.fromEntries(data.map(r => [r.key, r.value]))
@@ -132,9 +141,41 @@ export default function AdminDashboard() {
     setSettings(s => ({ ...s, app_icon_url: '' }))
   }
 
+  const handleSaveName = async () => {
+    setSavingName(true)
+    setSavedNameOk(false)
+    await supabase.from('system_settings').upsert({ key: 'app_name', value: settings.app_name }, { onConflict: 'key' })
+    invalidateSystemSettingsCache()
+    setSavingName(false)
+    setSavedNameOk(true)
+    setTimeout(() => setSavedNameOk(false), 3000)
+  }
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploadingLogo(true)
+    const ext  = file.name.split('.').pop()
+    const path = `app-logo-${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('app-assets').upload(path, file, { upsert: true })
+    if (error) { setUploadingLogo(false); return }
+    const { data: { publicUrl } } = supabase.storage.from('app-assets').getPublicUrl(path)
+    setSettings(s => ({ ...s, app_logo_url: publicUrl }))
+    await supabase.from('system_settings').upsert({ key: 'app_logo_url', value: publicUrl }, { onConflict: 'key' })
+    invalidateSystemSettingsCache()
+    setUploadingLogo(false)
+    if (logoInputRef.current) logoInputRef.current.value = ''
+  }
+
+  const handleRemoveLogo = async () => {
+    await supabase.from('system_settings').upsert({ key: 'app_logo_url', value: '' }, { onConflict: 'key' })
+    setSettings(s => ({ ...s, app_logo_url: '' }))
+    invalidateSystemSettingsCache()
+  }
+
   return (
     <Layout>
-      <div className="admin-page">
+      <div className="admin-page" style={{ margin: '0 auto' }}>
         <div className="products-header" style={{ marginBottom: 24 }}>
           <div>
             <h1 className="page-title">Super Admin</h1>
@@ -180,6 +221,51 @@ export default function AdminDashboard() {
                   : 'Forçar em todos'}
               </button>
             </div>
+          </div>
+
+          {/* Nome do sistema */}
+          <div className="admin-settings-row" style={{ marginTop:14, paddingTop:14, borderTop:'1px solid var(--border)' }}>
+            <div className="admin-settings-label">
+              <span>Nome do sistema</span>
+              <span className="admin-settings-sub">Exibido nas telas de login e cabeçalho</span>
+            </div>
+            <input
+              className="field-input"
+              value={settings.app_name}
+              onChange={e => setSettings(s => ({ ...s, app_name: e.target.value }))}
+              placeholder="KanbanCRM"
+              style={{ width:180, fontSize:13, padding:'6px 10px' }}
+            />
+            <button className="btn btn-primary" onClick={handleSaveName} disabled={savingName} style={{ padding:'6px 14px', fontSize:12 }}>
+              {savingName ? 'Salvando…' : savedNameOk
+                ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salvo!</>
+                : 'Salvar nome'}
+            </button>
+          </div>
+
+          {/* Logo do sistema */}
+          <div className="admin-settings-row" style={{ marginTop:14, paddingTop:14, borderTop:'1px solid var(--border)' }}>
+            <div className="admin-settings-label">
+              <span>Logo do sistema</span>
+              <span className="admin-settings-sub">Exibida nas telas de login</span>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              {settings.app_logo_url
+                ? <img src={settings.app_logo_url} alt="Logo" style={{ height:40, maxWidth:130, objectFit:'contain', border:'1px solid var(--border)', borderRadius:'var(--radius)', padding:4, background:'var(--bg)' }} />
+                : <div style={{ height:40, width:90, border:'1px dashed var(--border)', borderRadius:'var(--radius)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <span style={{ fontSize:11, color:'var(--text-dim)' }}>Sem logo</span>
+                  </div>
+              }
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                <button className="btn btn-ghost" style={{ padding:'6px 12px', fontSize:12 }} onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}>
+                  {uploadingLogo ? <><div className="spinner" style={{ width:11, height:11, borderWidth:2 }} /> Enviando…</> : 'Escolher imagem'}
+                </button>
+                {settings.app_logo_url && (
+                  <button className="btn btn-ghost" style={{ padding:'4px 12px', fontSize:11, color:'var(--danger)' }} onClick={handleRemoveLogo}>Remover</button>
+                )}
+              </div>
+            </div>
+            <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style={{ display:'none' }} onChange={handleLogoUpload} />
           </div>
 
           {/* Ícone do app */}
