@@ -24,7 +24,7 @@ export default function Login() {
       applyAccentColor(data?.default_accent || null)
       if (data?.default_accent) try { sessionStorage.setItem('_ea', data.default_accent) } catch (_) {}
       if (data?.app_icon_url) setFavicon(data.app_icon_url)
-      if (data?.app_name) setAppName(data.app_name)
+      if (data?.app_name) { setAppName(data.app_name); document.title = data.app_name }
       if (data?.app_logo_url !== undefined) setAppLogoUrl(data.app_logo_url || '')
     }).catch(() => applyAccentColor(null))
   }, [])

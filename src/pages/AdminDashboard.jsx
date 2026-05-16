@@ -146,6 +146,7 @@ export default function AdminDashboard() {
     setSavedNameOk(false)
     await supabase.from('system_settings').upsert({ key: 'app_name', value: settings.app_name }, { onConflict: 'key' })
     invalidateSystemSettingsCache()
+    if (settings.app_name) document.title = settings.app_name
     setSavingName(false)
     setSavedNameOk(true)
     setTimeout(() => setSavedNameOk(false), 3000)

@@ -72,19 +72,17 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const [isLight, toggleTheme] = useTheme(profile?.id)
   useGlobalVersion()
   useEffect(() => {
+    loadSystemSettings().then(s => {
+      if (s?.app_name) document.title = s.app_name
+      if (s?.app_icon_url) setFavicon(s.app_icon_url)
+      if (!accentColor && s?.default_accent) {
+        applyAccentColor(s.default_accent)
+        try { sessionStorage.setItem('_ea', s.default_accent) } catch (_) {}
+      }
+    })
     if (accentColor) {
       applyAccentColor(accentColor)
       try { sessionStorage.setItem('_ea', accentColor) } catch (_) {}
-      // Populate system settings cache even when company has its own color
-      loadSystemSettings().catch(() => {})
-    } else {
-      loadSystemSettings().then(s => {
-        if (s?.default_accent) {
-          applyAccentColor(s.default_accent)
-          try { sessionStorage.setItem('_ea', s.default_accent) } catch (_) {}
-        }
-        if (s?.app_icon_url) setFavicon(s.app_icon_url)
-      })
     }
     return () => applyAccentColor(null)
   }, [accentColor])
