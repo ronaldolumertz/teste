@@ -9,6 +9,10 @@ import { setFavicon } from '../lib/favicon'
 const fmt = v => new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits:0 }).format(v)
 const fmtDate = d => new Date(d).toLocaleDateString('pt-BR')
 
+const BOLT_PATH = 'M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z'
+const generateIconSvg = (color) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="${color}"/><svg x="96" y="96" width="320" height="320" viewBox="0 0 48 46" preserveAspectRatio="xMidYMid meet"><path fill="white" d="${BOLT_PATH}"/></svg></svg>`
+
 export default function AdminDashboard() {
   const [companies, setCompanies]         = useState([])
   const [loading, setLoading]             = useState(true)
@@ -58,9 +62,21 @@ export default function AdminDashboard() {
   const handleSaveColor = async () => {
     setSavingSettings(true)
     setSavedSettingsOk(false)
-    await supabase
-      .from('system_settings')
-      .upsert({ key: 'default_accent', value: settings.default_accent }, { onConflict: 'key' })
+    const color = settings.default_accent
+    await supabase.from('system_settings').upsert({ key: 'default_accent', value: color }, { onConflict: 'key' })
+
+    // Gerar ícone SVG com a nova cor e fazer upload
+    try {
+      const blob = new Blob([generateIconSvg(color)], { type: 'image/svg+xml' })
+      const { error: upErr } = await supabase.storage.from('app-assets').upload('app-icon.svg', blob, { contentType: 'image/svg+xml', upsert: true })
+      if (!upErr) {
+        const { data: { publicUrl } } = supabase.storage.from('app-assets').getPublicUrl('app-icon.svg')
+        await supabase.from('system_settings').upsert({ key: 'app_icon_url', value: publicUrl }, { onConflict: 'key' })
+        setSettings(s => ({ ...s, app_icon_url: publicUrl }))
+        setFavicon(publicUrl)
+      }
+    } catch (_) { /* storage não configurado ainda — ignora */ }
+
     setSavingSettings(false)
     setSavedSettingsOk(true)
     setTimeout(() => setSavedSettingsOk(false), 4000)
@@ -154,13 +170,11 @@ export default function AdminDashboard() {
               <span className="admin-settings-sub">Favicon das abas + ícone instalado</span>
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-              {settings.app_icon_url ? (
-                <img src={settings.app_icon_url} alt="Ícone" className="admin-icon-preview" />
-              ) : (
-                <div className="admin-icon-placeholder">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m9 9 6 6M15 9l-6 6"/></svg>
-                </div>
-              )}
+              <img
+                src={settings.app_icon_url || (import.meta.env.BASE_URL + 'pwa-192.png')}
+                alt="Ícone atual"
+                className="admin-icon-preview"
+              />
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 <button className="btn btn-ghost" style={{ padding:'6px 12px', fontSize:12 }} onClick={() => iconInputRef.current?.click()} disabled={uploadingIcon}>
                   {uploadingIcon ? <><div className="spinner" style={{ width:11, height:11, borderWidth:2 }} /> Enviando…</> : 'Escolher imagem'}

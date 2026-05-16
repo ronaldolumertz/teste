@@ -11,6 +11,17 @@ import ArtStageModal from './ArtStageModal'
 import NumberingModal from './NumberingModal'
 import { subscribePush, unsubscribePush, getNotificationPermission } from '../lib/push'
 import { applyAccentColor } from '../lib/accentColor'
+import { supabase } from '../lib/supabase'
+import { setFavicon } from '../lib/favicon'
+
+// Cache da sessão para evitar chamadas repetidas ao banco
+let _sysSettingsCache = null
+async function loadSystemSettings() {
+  if (_sysSettingsCache) return _sysSettingsCache
+  const { data } = await supabase.rpc('get_app_settings')
+  _sysSettingsCache = data || {}
+  return _sysSettingsCache
+}
 
 function useTheme(userId) {
   const [light, setLight] = useState(false)
@@ -49,8 +60,16 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   const [isLight, toggleTheme] = useTheme(profile?.id)
   useGlobalVersion()
   useEffect(() => {
-    applyAccentColor(accentColor || null)
-    return () => applyAccentColor(null) // reset when Layout unmounts (logout/session expire)
+    if (accentColor) {
+      applyAccentColor(accentColor)
+    } else {
+      // Sem cor da empresa → busca o padrão do sistema
+      loadSystemSettings().then(s => {
+        if (s?.default_accent) applyAccentColor(s.default_accent)
+        if (s?.app_icon_url) setFavicon(s.app_icon_url)
+      })
+    }
+    return () => applyAccentColor(null)
   }, [accentColor])
   const [drawerOpen, setDrawerOpen]         = useState(false)
   const [profileOpen, setProfileOpen]       = useState(false)
