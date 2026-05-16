@@ -54,7 +54,29 @@ export function AuthProvider({ children }) {
 
   async function signUp({ email, password, name, companyName }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
-    if (error) throw error
+
+    if (error) {
+      const msg = error.message?.toLowerCase() || ''
+      // Email exists in auth.users but profile may have been deleted (user removed from team)
+      if (msg.includes('already registered') || msg.includes('already exists')) {
+        const { data: siData, error: siErr } = await supabase.auth.signInWithPassword({ email, password })
+        if (siErr) throw new Error('Este e-mail já está cadastrado. Use a opção Entrar com a senha correta.')
+        const profileData = await fetchProfile(siData.user.id)
+        if (profileData) {
+          await supabase.auth.signOut()
+          throw new Error('Este e-mail já está ativo em uma empresa. Use a opção Entrar.')
+        }
+        // No profile → user was removed from a team; create a new company for them
+        const { error: rpcErr } = await supabase.rpc('register_company', {
+          p_company_name: companyName, p_user_name: name, p_user_email: email,
+        })
+        if (rpcErr) { await supabase.auth.signOut(); throw rpcErr }
+        await fetchProfile(siData.user.id)
+        setUser(siData.user)
+        return siData
+      }
+      throw error
+    }
 
     const { error: rpcErr } = await supabase.rpc('register_company', {
       p_company_name: companyName,
