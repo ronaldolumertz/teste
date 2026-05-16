@@ -16,7 +16,7 @@ const generateIconSvg = (color) =>
 
 const ROLE_LABEL = { owner: 'Dono', admin: 'Admin', member: 'Membro' }
 
-function ConfirmModal({ action, onConfirm, onCancel }) {
+function ConfirmModal({ action, error, busy, onConfirm, onCancel }) {
   const isDelete = action.type === 'delete'
   return (
     <div className="cp-overlay" onClick={onCancel}>
@@ -32,13 +32,16 @@ function ConfirmModal({ action, onConfirm, onCancel }) {
               : <><strong>{action.name}</strong> não conseguirá mais fazer login até ser desbloqueado.</>
           }
         </div>
+        {error && <div style={{ fontSize:12, color:'var(--danger)', background:'rgba(239,68,68,.08)', border:'1px solid rgba(239,68,68,.2)', borderRadius:'var(--radius)', padding:'8px 10px', marginBottom:14 }}>{error}</div>}
         <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
-          <button className="btn btn-ghost" style={{ padding:'7px 16px', fontSize:13 }} onClick={onCancel}>Cancelar</button>
+          <button className="btn btn-ghost" style={{ padding:'7px 16px', fontSize:13 }} onClick={onCancel} disabled={busy}>Cancelar</button>
           <button
             className="btn btn-primary"
-            style={{ padding:'7px 16px', fontSize:13, background: isDelete ? 'var(--danger)' : undefined }}
+            style={{ padding:'7px 16px', fontSize:13, background: isDelete ? 'var(--danger)' : undefined, display:'flex', alignItems:'center', gap:6 }}
             onClick={onConfirm}
+            disabled={busy}
           >
+            {busy && <div className="spinner" style={{ width:11, height:11, borderWidth:2 }} />}
             {isDelete ? 'Excluir definitivamente' : action.blocked ? 'Desbloquear' : 'Bloquear'}
           </button>
         </div>
@@ -258,18 +261,27 @@ export default function AdminDashboard() {
   const requestBlock = (user) => setConfirmAction({ type: 'block', id: user.id, name: user.name || user.email, blocked: user.blocked })
   const requestDelete = (user) => setConfirmAction({ type: 'delete', id: user.id, name: user.name || user.email })
 
+  const [actionError, setActionError] = useState('')
+
   const handleConfirm = async () => {
     if (!confirmAction) return
     setActionBusy(true)
-    if (confirmAction.type === 'block') {
-      await supabase.rpc('admin_set_blocked', { p_user_id: confirmAction.id, p_blocked: !confirmAction.blocked })
-      setUsers(us => us.map(u => u.id === confirmAction.id ? { ...u, blocked: !confirmAction.blocked } : u))
-    } else {
-      await supabase.rpc('admin_delete_user', { p_user_id: confirmAction.id })
-      setUsers(us => us.filter(u => u.id !== confirmAction.id))
+    setActionError('')
+    try {
+      if (confirmAction.type === 'block') {
+        const { error } = await supabase.rpc('admin_set_blocked', { p_user_id: confirmAction.id, p_blocked: !confirmAction.blocked })
+        if (error) throw error
+        setUsers(us => us.map(u => u.id === confirmAction.id ? { ...u, blocked: !confirmAction.blocked } : u))
+      } else {
+        const { error } = await supabase.rpc('admin_delete_user', { p_user_id: confirmAction.id })
+        if (error) throw error
+        setUsers(us => us.filter(u => u.id !== confirmAction.id))
+      }
+      setConfirmAction(null)
+    } catch (err) {
+      setActionError(err.message || 'Erro ao executar ação. Verifique se a migração SQL 023 foi aplicada no Supabase.')
     }
     setActionBusy(false)
-    setConfirmAction(null)
   }
 
   const Chk = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -437,7 +449,9 @@ export default function AdminDashboard() {
       {confirmAction && (
         <ConfirmModal
           action={confirmAction}
-          onCancel={() => !actionBusy && setConfirmAction(null)}
+          error={actionError}
+          busy={actionBusy}
+          onCancel={() => { if (!actionBusy) { setConfirmAction(null); setActionError('') } }}
           onConfirm={handleConfirm}
         />
       )}

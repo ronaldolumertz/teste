@@ -1,6 +1,9 @@
 -- Add blocked column to profiles
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS blocked boolean NOT NULL DEFAULT false;
 
+-- Enable realtime on profiles so blocked users are kicked out immediately
+ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
+
 -- RPC to block/unblock a user (superadmin only)
 CREATE OR REPLACE FUNCTION public.admin_set_blocked(p_user_id uuid, p_blocked boolean)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$

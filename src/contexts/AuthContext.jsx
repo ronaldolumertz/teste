@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { applyAccentColor } from '../lib/accentColor'
 import { setFavicon } from '../lib/favicon'
@@ -10,6 +10,7 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [company, setCompany] = useState(null)
   const [loading, setLoading] = useState(true)
+  const userRef               = useRef(null)
 
   async function fetchProfile(uid) {
     const { data } = await supabase
@@ -27,8 +28,10 @@ export function AuthProvider({ children }) {
     return data
   }
 
+  // Keep a ref so event listeners can read current user without stale closure
+  useEffect(() => { userRef.current = user }, [user])
+
   useEffect(() => {
-    // On initial load, only set user if profile exists
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         const p = await fetchProfile(session.user.id)
@@ -41,7 +44,6 @@ export function AuthProvider({ children }) {
       setLoading(false)
     })
 
-    // Only react to sign-out events here — sign-in is handled inside signIn/signUp
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
         setUser(null)
@@ -49,8 +51,35 @@ export function AuthProvider({ children }) {
         setCompany(null)
       }
     })
-    return () => subscription.unsubscribe()
+
+    // Re-check blocked status when tab becomes visible (handles already-logged-in case)
+    const handleVisible = async () => {
+      if (document.visibilityState !== 'visible' || !userRef.current) return
+      const p = await fetchProfile(userRef.current.id)
+      if (!p || p.blocked) await supabase.auth.signOut()
+    }
+    document.addEventListener('visibilitychange', handleVisible)
+
+    return () => {
+      subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisible)
+    }
   }, [])
+
+  // Realtime: kick out the moment profile.blocked is set to true
+  useEffect(() => {
+    if (!user) return
+    const channel = supabase
+      .channel(`profile-block:${user.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'profiles',
+        filter: `id=eq.${user.id}`,
+      }, async (payload) => {
+        if (payload.new?.blocked) await supabase.auth.signOut()
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [user])
 
   async function signUp({ email, password, name, companyName, phone }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
