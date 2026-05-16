@@ -20,7 +20,12 @@ export default function AdminDashboard() {
   const [loading, setLoading]             = useState(true)
   const [renovando, setRenovando]         = useState(false)
   const [renovadoOk, setRenovadoOk]       = useState(false)
-  const [settings, setSettings]           = useState({ default_accent: '#6366f1', app_icon_url: '' })
+  const [settings, setSettings]           = useState(() => {
+    try {
+      const s = JSON.parse(sessionStorage.getItem('_sysSettings') || '{}')
+      return { default_accent: s.default_accent || '#6366f1', app_icon_url: s.app_icon_url || '' }
+    } catch (_) { return { default_accent: '#6366f1', app_icon_url: '' } }
+  })
   const [savingSettings, setSavingSettings] = useState(false)
   const [savedSettingsOk, setSavedSettingsOk] = useState(false)
   const [uploadingIcon, setUploadingIcon] = useState(false)
