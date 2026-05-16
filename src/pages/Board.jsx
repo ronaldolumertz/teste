@@ -602,23 +602,25 @@ export default function Board() {
             </button>
           </div>
 
-          <div className="board-quick-search">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={`Buscar ${itemName}...`}
-            />
-            {search && (
-              <button className="btn-icon" style={{ padding: 2 }} onClick={() => setSearch('')}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M18 6 6 18M6 6l12 12"/>
-                </svg>
-              </button>
-            )}
-          </div>
+          {viewMode === 'kanban' && (
+            <div className="board-quick-search">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder={`Buscar ${itemName}...`}
+              />
+              {search && (
+                <button className="btn-icon" style={{ padding: 2 }} onClick={() => setSearch('')}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -630,7 +632,6 @@ export default function Board() {
           canViewColumn={canViewColumn}
           onEditCard={setEditingCard}
           itemName={itemName}
-          search={search}
         />
       )}
 
