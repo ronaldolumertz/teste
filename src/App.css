@@ -443,6 +443,21 @@ select.field-input.field-input-placeholder { color:var(--text-dim); }
 
 /* ── Admin / Super Admin ─────────────────────────────────── */
 .admin-page { padding:24px; max-width:920px; margin:0 auto; width:100%; box-sizing:border-box; }
+.admin-tab-nav { display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:0; }
+.admin-tab-btn { display:flex; align-items:center; gap:6px; background:none; border:none; border-bottom:2px solid transparent; padding:8px 14px; font-size:13px; font-weight:600; color:var(--text-muted); cursor:pointer; margin-bottom:-1px; transition:color var(--transition), border-color var(--transition); }
+.admin-tab-btn:hover { color:var(--text); }
+.admin-tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+.admin-tab-badge { background:var(--hover); border-radius:20px; padding:1px 7px; font-size:10px; font-weight:700; color:var(--text-muted); }
+.admin-tab-btn.active .admin-tab-badge { background:var(--accent-light); color:var(--accent); }
+.admin-users-list { display:flex; flex-direction:column; gap:6px; }
+.admin-user-row { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+.admin-user-main { display:flex; align-items:center; gap:12px; padding:12px 14px; }
+.admin-user-main:hover { background:var(--hover); }
+.admin-user-detail { padding:14px 14px 14px 60px; border-top:1px solid var(--border); background:var(--bg); }
+.admin-user-detail-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:10px; }
+.admin-user-detail-grid > div { display:flex; flex-direction:column; gap:2px; }
+.badge-superadmin { font-size:10px; font-weight:700; padding:1px 7px; border-radius:20px; background:var(--accent-light); color:var(--accent); }
+.badge-blocked { font-size:10px; font-weight:700; padding:1px 7px; border-radius:20px; background:rgba(239,68,68,.12); color:#ef4444; }
 .admin-companies { display:flex; flex-direction:column; gap:10px; }
 .admin-company-card { display:flex; flex-direction:column; gap:14px; padding:16px 18px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); text-decoration:none; transition:border-color var(--transition), box-shadow var(--transition); }
 .admin-company-card:hover { border-color:var(--accent); box-shadow:var(--shadow-sm); }

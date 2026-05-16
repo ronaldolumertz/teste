@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         const p = await fetchProfile(session.user.id)
-        if (p) {
+        if (p && !p.blocked) {
           setUser(session.user)
         } else {
           await supabase.auth.signOut()
@@ -111,6 +111,10 @@ export function AuthProvider({ children }) {
     if (!profileData) {
       await supabase.auth.signOut()
       throw new Error('Usuário removido do sistema. Entre em contato com o administrador.')
+    }
+    if (profileData.blocked) {
+      await supabase.auth.signOut()
+      throw new Error('Sua conta está bloqueada. Entre em contato com o administrador.')
     }
     setUser(data.user)
     return data
