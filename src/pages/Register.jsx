@@ -38,6 +38,7 @@ export default function Register() {
     supabase.rpc('get_app_settings').then(({ data }) => {
       try { sessionStorage.setItem('_sysSettings', JSON.stringify(data || {})) } catch (_) {}
       applyAccentColor(data?.default_accent || null)
+      if (data?.default_accent) try { sessionStorage.setItem('_ea', data.default_accent) } catch (_) {}
       if (data?.app_icon_url) setFavicon(data.app_icon_url)
     }).catch(() => applyAccentColor(null))
   }, [])

@@ -74,10 +74,15 @@ export default function Layout({ children, stats, search, onSearch, onAddColumn 
   useEffect(() => {
     if (accentColor) {
       applyAccentColor(accentColor)
+      try { sessionStorage.setItem('_ea', accentColor) } catch (_) {}
+      // Populate system settings cache even when company has its own color
+      loadSystemSettings().catch(() => {})
     } else {
-      // Sem cor da empresa → busca o padrão do sistema
       loadSystemSettings().then(s => {
-        if (s?.default_accent) applyAccentColor(s.default_accent)
+        if (s?.default_accent) {
+          applyAccentColor(s.default_accent)
+          try { sessionStorage.setItem('_ea', s.default_accent) } catch (_) {}
+        }
         if (s?.app_icon_url) setFavicon(s.app_icon_url)
       })
     }
