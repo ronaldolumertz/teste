@@ -203,9 +203,9 @@ function ItemRow({ card, onEditCard }) {
 
 // ── Sector group with own pagination ─────────────────────────
 function SectorGroup({ sector, cards, pageSize, onEditCard }) {
-  const [page, setPage] = useState(1)
+  const [page, setPage]     = useState(1)
+  const [isOpen, setIsOpen] = useState(true)
 
-  // Reset page when data changes (filter/sort/search)
   const cardsLen = cards.length
   useEffect(() => { setPage(1) }, [cardsLen])
 
@@ -214,25 +214,40 @@ function SectorGroup({ sector, cards, pageSize, onEditCard }) {
 
   return (
     <div className="lv-sector-section">
-      <div className="lv-sector-bar">
+      <div
+        className="lv-sector-bar"
+        onClick={() => setIsOpen(v => !v)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => e.key === 'Enter' && setIsOpen(v => !v)}
+      >
+        <svg
+          className={`lv-sector-chevron${isOpen ? ' open' : ''}`}
+          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+        >
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
         {sector?.color && <span className="lv-sector-dot" style={{ background: sector.color }} />}
         <span className="lv-sector-name">{sector ? sector.title : 'Sem Setor'}</span>
         <span className="lv-sector-count">{cards.length}</span>
       </div>
 
-      <div className="lv-rows">
-        {pageCards.map(card => (
-          <ItemRow key={card.id} card={card} onEditCard={onEditCard} />
-        ))}
+      <div className={`lv-sector-body${isOpen ? ' open' : ''}`}>
+        <div className="lv-sector-body-inner">
+          <div className="lv-rows">
+            {pageCards.map(card => (
+              <ItemRow key={card.id} card={card} onEditCard={onEditCard} />
+            ))}
+          </div>
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            total={cards.length}
+            pageSize={pageSize}
+            onPage={setPage}
+          />
+        </div>
       </div>
-
-      <Pagination
-        page={page}
-        pageCount={pageCount}
-        total={cards.length}
-        pageSize={pageSize}
-        onPage={setPage}
-      />
     </div>
   )
 }
