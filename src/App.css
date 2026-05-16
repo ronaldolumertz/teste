@@ -452,6 +452,12 @@ select.field-input.field-input-placeholder { color:var(--text-dim); }
 .admin-item-info { flex:1; min-width:0; }
 .admin-item-name { font-size:13px; font-weight:600; color:var(--text); }
 .admin-item-sub { font-size:11px; color:var(--text-muted); }
+.admin-settings-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; margin-bottom:20px; }
+.admin-color-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:10px; }
+.admin-color-row label { font-size:13px; font-weight:600; color:var(--text); flex:1; min-width:160px; }
+.admin-color-swatch { display:flex; align-items:center; gap:8px; }
+.admin-color-swatch input[type="color"] { width:40px; height:34px; border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; padding:2px; background:var(--surface); }
+.admin-color-hex { font-size:12px; font-family:monospace; color:var(--text-muted); min-width:62px; }
 
 /* ── Logomarca da empresa ────────────────────────────────── */
 .company-logo-header { height:32px; max-width:150px; object-fit:contain; flex-shrink:0; }

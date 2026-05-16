@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { applyAccentColor } from '../lib/accentColor'
+import { supabase } from '../lib/supabase'
 
 function EyeIcon({ visible }) {
   return visible ? (
@@ -27,7 +28,11 @@ export default function Register() {
   const { signUp }                  = useAuth()
   const navigate                    = useNavigate()
 
-  useEffect(() => { applyAccentColor(null) }, [])
+  useEffect(() => {
+    supabase.rpc('get_app_settings')
+      .then(({ data }) => applyAccentColor(data?.default_accent || null))
+      .catch(() => applyAccentColor(null))
+  }, [])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 

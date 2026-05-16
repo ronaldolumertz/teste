@@ -12,6 +12,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [renovando, setRenovando] = useState(false)
   const [renovadoOk, setRenovadoOk] = useState(false)
+  const [settings, setSettings] = useState({ default_accent: '#6366f1' })
+  const [savingSettings, setSavingSettings] = useState(false)
+  const [savedSettingsOk, setSavedSettingsOk] = useState(false)
 
   useEffect(() => {
     supabase
@@ -19,7 +22,28 @@ export default function AdminDashboard() {
       .select('id, name, logo_url, created_at, profiles(id, name, role, email), cards(value)')
       .order('created_at', { ascending: false })
       .then(({ data }) => { setCompanies(data || []); setLoading(false) })
+    supabase
+      .from('system_settings')
+      .select('key, value')
+      .in('key', ['default_accent'])
+      .then(({ data }) => {
+        if (data?.length) {
+          const map = Object.fromEntries(data.map(r => [r.key, r.value]))
+          setSettings(s => ({ ...s, ...map }))
+        }
+      })
   }, [])
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true)
+    setSavedSettingsOk(false)
+    await supabase
+      .from('system_settings')
+      .upsert({ key: 'default_accent', value: settings.default_accent }, { onConflict: 'key' })
+    setSavingSettings(false)
+    setSavedSettingsOk(true)
+    setTimeout(() => setSavedSettingsOk(false), 4000)
+  }
 
   const handleRenovarTodos = async () => {
     setRenovando(true)
@@ -57,6 +81,31 @@ export default function AdminDashboard() {
               <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Renovar todos os apps</>
             )}
           </button>
+        </div>
+
+        <div className="admin-settings-card">
+          <div className="admin-section-title">Configurações do Sistema</div>
+          <div className="admin-color-row">
+            <label>Cor padrão (novas empresas / login)</label>
+            <div className="admin-color-swatch">
+              <input
+                type="color"
+                value={settings.default_accent}
+                onChange={e => setSettings(s => ({ ...s, default_accent: e.target.value }))}
+              />
+              <span className="admin-color-hex">{settings.default_accent}</span>
+            </div>
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveSettings}
+              disabled={savingSettings}
+              style={{ padding:'6px 14px', fontSize:12 }}
+            >
+              {savingSettings ? 'Salvando…' : savedSettingsOk
+                ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Salvo!</>
+                : 'Salvar'}
+            </button>
+          </div>
         </div>
 
         {loading ? (

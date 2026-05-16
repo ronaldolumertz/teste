@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { applyAccentColor } from '../lib/accentColor'
+import { supabase } from '../lib/supabase'
 
 export default function Login() {
   const [form, setForm]   = useState({ email: '', password: '' })
@@ -9,9 +10,11 @@ export default function Login() {
   const [busy, setBusy]   = useState(false)
   const { signIn }        = useAuth()
 
-  // Always reset accent color on the login page — the company color must
-  // never bleed into the public area, even with old service-worker cache.
-  useEffect(() => { applyAccentColor(null) }, [])
+  useEffect(() => {
+    supabase.rpc('get_app_settings')
+      .then(({ data }) => applyAccentColor(data?.default_accent || null))
+      .catch(() => applyAccentColor(null))
+  }, [])
   const navigate          = useNavigate()
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
