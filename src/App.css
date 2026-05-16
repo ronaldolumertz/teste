@@ -458,6 +458,31 @@ select.field-input.field-input-placeholder { color:var(--text-dim); }
 .admin-color-swatch { display:flex; align-items:center; gap:8px; }
 .admin-color-swatch input[type="color"] { width:40px; height:34px; border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; padding:2px; background:var(--surface); }
 .admin-color-hex { font-size:12px; font-family:monospace; color:var(--text-muted); min-width:62px; }
+.admin-settings-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px; }
+.admin-settings-label { flex:1; min-width:160px; display:flex; flex-direction:column; gap:2px; }
+.admin-settings-label span:first-child { font-size:13px; font-weight:600; color:var(--text); }
+.admin-settings-sub { font-size:11px; color:var(--text-dim); }
+.admin-icon-preview { width:44px; height:44px; object-fit:contain; border-radius:var(--radius); border:1px solid var(--border); background:var(--bg); }
+.admin-icon-placeholder { width:44px; height:44px; border-radius:var(--radius); border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-dim); }
+
+/* ── Color Picker ─────────────────────────────────────────── */
+.cp-swatch { width:40px; height:34px; border-radius:var(--radius); border:2px solid var(--border); cursor:pointer; transition:transform 150ms; flex-shrink:0; }
+.cp-swatch:hover { transform:scale(1.06); }
+.cp-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px; }
+.cp-modal { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; width:316px; max-width:100%; display:flex; flex-direction:column; gap:13px; box-shadow:0 24px 64px rgba(0,0,0,.5); }
+.cp-title { font-size:15px; font-weight:700; color:var(--text); }
+.cp-canvas { width:100%; height:190px; border-radius:var(--radius); cursor:crosshair; touch-action:none; display:block; }
+.cp-hue-wrap { padding:2px 0; }
+.cp-hue-slider { -webkit-appearance:none; appearance:none; width:100%; height:14px; border-radius:7px; background:linear-gradient(to right,hsl(0,100%,50%),hsl(30,100%,50%),hsl(60,100%,50%),hsl(90,100%,50%),hsl(120,100%,50%),hsl(150,100%,50%),hsl(180,100%,50%),hsl(210,100%,50%),hsl(240,100%,50%),hsl(270,100%,50%),hsl(300,100%,50%),hsl(330,100%,50%),hsl(360,100%,50%)); outline:none; cursor:pointer; border:none; }
+.cp-hue-slider::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:#fff; border:2px solid rgba(0,0,0,.2); box-shadow:0 1px 4px rgba(0,0,0,.3); cursor:pointer; }
+.cp-hue-slider::-moz-range-thumb { width:20px; height:20px; border-radius:50%; background:#fff; border:2px solid rgba(0,0,0,.2); box-shadow:0 1px 4px rgba(0,0,0,.3); cursor:pointer; border:none; }
+.cp-hex-row { display:flex; align-items:center; gap:10px; }
+.cp-preview { width:36px; height:36px; border-radius:var(--radius); border:1px solid var(--border); flex-shrink:0; }
+.cp-hex-input { flex:1; font-family:monospace; font-size:13px; letter-spacing:.5px; }
+.cp-presets { display:flex; gap:7px; flex-wrap:wrap; }
+.cp-preset-dot { width:27px; height:27px; border-radius:50%; border:none; cursor:pointer; padding:0; transition:transform 150ms, box-shadow 120ms; }
+.cp-preset-dot:hover { transform:scale(1.18); }
+.cp-actions { display:flex; justify-content:flex-end; gap:8px; }
 
 /* ── Logomarca da empresa ────────────────────────────────── */
 .company-logo-header { height:32px; max-width:150px; object-fit:contain; flex-shrink:0; }
