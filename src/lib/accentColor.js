@@ -5,12 +5,19 @@ export const ACCENT_PRESETS = [
   '#f97316','#f59e0b','#22c55e','#14b8a6','#3b82f6','#0ea5e9','#64748b',
 ]
 
+function setThemeColor(hex) {
+  let meta = document.querySelector('meta[name="theme-color"]')
+  if (!meta) { meta = document.createElement('meta'); meta.name = 'theme-color'; document.head.appendChild(meta) }
+  meta.content = hex
+}
+
 export function applyAccentColor(hex) {
   const valid = hex && /^#[0-9a-fA-F]{6}$/.test(hex)
   if (!valid) {
     document.documentElement.style.removeProperty('--accent')
     document.documentElement.style.removeProperty('--accent-hover')
     document.documentElement.style.removeProperty('--accent-light')
+    setThemeColor(DEFAULT_ACCENT)
     return
   }
   const r = parseInt(hex.slice(1, 3), 16)
@@ -21,4 +28,5 @@ export function applyAccentColor(hex) {
   document.documentElement.style.setProperty('--accent', hex)
   document.documentElement.style.setProperty('--accent-hover', `#${toHex(darken(r))}${toHex(darken(g))}${toHex(darken(b))}`)
   document.documentElement.style.setProperty('--accent-light', `rgba(${r},${g},${b},0.15)`)
+  setThemeColor(hex)
 }

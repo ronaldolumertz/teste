@@ -30,7 +30,13 @@ export default function Register() {
   const navigate                    = useNavigate()
 
   useEffect(() => {
+    try {
+      const s = JSON.parse(sessionStorage.getItem('_sysSettings') || '{}')
+      if (s?.default_accent) applyAccentColor(s.default_accent)
+      if (s?.app_icon_url) setFavicon(s.app_icon_url)
+    } catch (_) {}
     supabase.rpc('get_app_settings').then(({ data }) => {
+      try { sessionStorage.setItem('_sysSettings', JSON.stringify(data || {})) } catch (_) {}
       applyAccentColor(data?.default_accent || null)
       if (data?.app_icon_url) setFavicon(data.app_icon_url)
     }).catch(() => applyAccentColor(null))

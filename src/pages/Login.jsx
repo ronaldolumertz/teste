@@ -12,7 +12,15 @@ export default function Login() {
   const { signIn }        = useAuth()
 
   useEffect(() => {
+    // Aplica do cache imediatamente (sem flash)
+    try {
+      const s = JSON.parse(sessionStorage.getItem('_sysSettings') || '{}')
+      if (s?.default_accent) applyAccentColor(s.default_accent)
+      if (s?.app_icon_url) setFavicon(s.app_icon_url)
+    } catch (_) {}
+    // Busca versão fresca
     supabase.rpc('get_app_settings').then(({ data }) => {
+      try { sessionStorage.setItem('_sysSettings', JSON.stringify(data || {})) } catch (_) {}
       applyAccentColor(data?.default_accent || null)
       if (data?.app_icon_url) setFavicon(data.app_icon_url)
     }).catch(() => applyAccentColor(null))

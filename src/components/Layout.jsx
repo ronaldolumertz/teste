@@ -14,15 +14,26 @@ import { applyAccentColor } from '../lib/accentColor'
 import { supabase } from '../lib/supabase'
 import { setFavicon } from '../lib/favicon'
 
-// Cache da sessão para evitar chamadas repetidas ao banco
+const SYS_CACHE_KEY = '_sysSettings'
+
+// Cache em memória (evita round-trips no mesmo mount) + sessionStorage (evita flash entre páginas)
 let _sysSettingsCache = null
 async function loadSystemSettings() {
   if (_sysSettingsCache) return _sysSettingsCache
+  // Aplica imediatamente do sessionStorage para evitar flash de cor errada
+  try {
+    const stored = sessionStorage.getItem(SYS_CACHE_KEY)
+    if (stored) { _sysSettingsCache = JSON.parse(stored); return _sysSettingsCache }
+  } catch (_) {}
   const { data } = await supabase.rpc('get_app_settings')
   _sysSettingsCache = data || {}
+  try { sessionStorage.setItem(SYS_CACHE_KEY, JSON.stringify(_sysSettingsCache)) } catch (_) {}
   return _sysSettingsCache
 }
-export function invalidateSystemSettingsCache() { _sysSettingsCache = null }
+export function invalidateSystemSettingsCache() {
+  _sysSettingsCache = null
+  try { sessionStorage.removeItem(SYS_CACHE_KEY) } catch (_) {}
+}
 
 function useTheme(userId) {
   const [light, setLight] = useState(false)

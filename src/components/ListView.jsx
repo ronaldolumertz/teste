@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 
 const PRIORITY_LABEL = { high: 'Alta', medium: 'Média', low: 'Baixa' }
-const PRIORITY_COLOR = { high: '#ef4444', medium: '#f59e0b', low: '#22c55e' }
+const PRIORITY_COLOR = { high: '#ef4444', medium: 'var(--accent)', low: '#22c55e' }
 const PAGE_SIZES = [10, 20, 30, 50]
 
 function fmtCurrency(v) {
