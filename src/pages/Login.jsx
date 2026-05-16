@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { applyAccentColor } from '../lib/accentColor'
 import { supabase } from '../lib/supabase'
+import { setFavicon } from '../lib/favicon'
 
 export default function Login() {
   const [form, setForm]   = useState({ email: '', password: '' })
@@ -11,9 +12,10 @@ export default function Login() {
   const { signIn }        = useAuth()
 
   useEffect(() => {
-    supabase.rpc('get_app_settings')
-      .then(({ data }) => applyAccentColor(data?.default_accent || null))
-      .catch(() => applyAccentColor(null))
+    supabase.rpc('get_app_settings').then(({ data }) => {
+      applyAccentColor(data?.default_accent || null)
+      if (data?.app_icon_url) setFavicon(data.app_icon_url)
+    }).catch(() => applyAccentColor(null))
   }, [])
   const navigate          = useNavigate()
 

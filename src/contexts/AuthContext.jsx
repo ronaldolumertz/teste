@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { applyAccentColor } from '../lib/accentColor'
+import { setFavicon } from '../lib/favicon'
 
 const AuthContext = createContext(null)
 
@@ -128,10 +129,11 @@ export function AuthProvider({ children }) {
     || (company?.id ? localStorage.getItem(`accent_${company.id}`) : null)
     || null
 
-  const updateAccentColor = (color) => {
+  const updateAccentColor = async (color) => {
     if (company?.id) {
       if (color) localStorage.setItem(`accent_${company.id}`, color)
       else localStorage.removeItem(`accent_${company.id}`)
+      await supabase.from('companies').update({ accent_color: color || null }).eq('id', company.id)
     }
     setCompany(prev => ({ ...prev, accent_color: color }))
   }
