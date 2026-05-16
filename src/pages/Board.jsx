@@ -47,7 +47,7 @@ export default function Board() {
   const { profile, company, isAdmin, itemName, updateItemName, defaultColumnId, updateDefaultColumnId, artColumnId, updateCompany } = useAuth()
 
   const [viewMode, setViewMode] = useState(() =>
-    localStorage.getItem(`view_mode_${profile?.id}`) || 'list'
+    localStorage.getItem(`view_mode_${profile?.id}`) || 'kanban'
   )
   const handleSetViewMode = (mode) => {
     setViewMode(mode)

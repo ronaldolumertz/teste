@@ -466,17 +466,21 @@ select.field-input.field-input-placeholder { color:var(--text-dim); }
 
 /* ── Board quick bar ─────────────────────────────────────── */
 @keyframes quickBarEnter { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
-.board-quick-bar { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.board-quick-bar { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
 .board-quick-bar-enter { animation:quickBarEnter 320ms cubic-bezier(.22,1,.36,1); }
-.board-quick-add { display:flex; align-items:center; gap:6px; white-space:nowrap; flex-shrink:0; }
-.board-quick-search { display:flex; align-items:center; gap:8px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:7px 10px; flex:1; max-width:340px; transition:border-color var(--transition); }
+.board-quick-add { display:flex; align-items:center; gap:6px; white-space:nowrap; flex-shrink:0; order:1; }
+.board-quick-search { display:flex; align-items:center; gap:8px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:7px 10px; flex:1; max-width:340px; transition:border-color var(--transition); order:3; }
 .board-quick-search:focus-within { border-color:var(--accent); }
 .board-quick-search svg { color:var(--text-dim); flex-shrink:0; }
 .board-quick-search input { background:none; border:none; outline:none; font-size:13px; color:var(--text); flex:1; min-width:0; }
 .board-quick-search input::placeholder { color:var(--text-dim); }
+@media (max-width:640px) {
+  .board-quick-bar { gap:8px; padding:8px 12px; }
+  .board-quick-search { order:4; flex:0 0 100%; max-width:100%; }
+}
 
 /* ── View toggle ─────────────────────────────────────────── */
-.view-toggle { display:flex; align-items:center; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; flex-shrink:0; }
+.view-toggle { display:flex; align-items:center; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; flex-shrink:0; order:2; }
 .view-toggle-btn { display:flex; align-items:center; gap:5px; padding:5px 11px; font-size:12px; font-weight:600; color:var(--text-dim); background:none; border:none; border-radius:0; cursor:pointer; transition:background var(--transition),color var(--transition); white-space:nowrap; line-height:1.4; }
 .view-toggle-btn.active { background:var(--accent); color:#fff; }
 .view-toggle-btn:not(.active):hover { background:var(--surface2); color:var(--text); }
